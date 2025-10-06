@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, TextInput } from 'react-native';
 import { useSignUp } from '@clerk/clerk-expo';
 import { Link, router } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
@@ -57,16 +57,27 @@ export default function SignUpPage() {
         <>
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Email</Text>
-            <View style={styles.input}>
-              <Text>Email input placeholder</Text>
-            </View>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your email"
+              value={emailAddress}
+              onChangeText={setEmailAddress}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+            />
           </View>
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Password</Text>
-            <View style={styles.input}>
-              <Text>Password input placeholder</Text>
-            </View>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoComplete="password"
+            />
           </View>
 
           <TouchableOpacity style={styles.button} onPress={onSignUpPress}>
@@ -88,9 +99,14 @@ export default function SignUpPage() {
           
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Verification Code</Text>
-            <View style={styles.input}>
-              <Text>Code input placeholder</Text>
-            </View>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter 6-digit code"
+              value={code}
+              onChangeText={setCode}
+              keyboardType="number-pad"
+              maxLength={6}
+            />
           </View>
 
           <TouchableOpacity style={styles.button} onPress={onPressVerify}>
@@ -124,6 +140,7 @@ const styles = StyleSheet.create({
     padding: 15,
     fontSize: 16,
     backgroundColor: '#f9f9f9',
+    color: '#333',
   },
   button: {
     backgroundColor: '#007AFF',
