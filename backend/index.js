@@ -11,7 +11,7 @@
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
-const { ClerkExpressRequireAuth } = require('@clerk/express');
+const clerkClient = require('@clerk/clerk-sdk-node');
 require('dotenv').config();
 
 const app = express();
@@ -22,6 +22,23 @@ app.use(express.json());
 app.use(morgan('dev'));
 
 const PORT = process.env.PORT || 4000;
+
+// Custom Clerk authentication middleware
+const requireAuth = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const decoded = await clerkClient.verifyToken(token);
+    req.auth = { userId: decoded.sub };
+    next();
+  } catch (error) {
+    console.error('Auth error:', error);
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+};
 
 // Simple routes
 app.get('/', (req, res) => {
@@ -52,7 +69,7 @@ app.post('/api/items', (req, res) => {
 });
 
 // Protected routes - require Clerk authentication
-app.get('/api/protected/profile', ClerkExpressRequireAuth(), (req, res) => {
+app.get('/api/protected/profile', requireAuth, (req, res) => {
 	const { userId } = req.auth;
 	res.json({ 
 		message: 'This is a protected route', 
@@ -61,14 +78,14 @@ app.get('/api/protected/profile', ClerkExpressRequireAuth(), (req, res) => {
 	});
 });
 
-app.get('/api/protected/user-items', ClerkExpressRequireAuth(), (req, res) => {
+app.get('/api/protected/user-items', requireAuth, (req, res) => {
 	const { userId } = req.auth;
 	// Filter items by user (in real app, you'd query database by userId)
 	const userItems = items.filter(item => item.userId === userId);
 	res.json({ items: userItems, userId });
 });
 
-app.post('/api/protected/user-items', ClerkExpressRequireAuth(), (req, res) => {
+app.post('/api/protected/user-items', requireAuth, (req, res) => {
 	const { userId } = req.auth;
 	const { name } = req.body || {};
 	if (!name) return res.status(400).json({ error: 'name is required' });

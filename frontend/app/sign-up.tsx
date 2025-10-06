@@ -1,12 +1,104 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { SignUp } from '@clerk/clerk-expo';
+import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { useSignUp } from '@clerk/clerk-expo';
+import { Link, router } from 'expo-router';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 
 export default function SignUpPage() {
+  const { signUp, setActive, isLoaded } = useSignUp();
+  const [emailAddress, setEmailAddress] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [pendingVerification, setPendingVerification] = React.useState(false);
+  const [code, setCode] = React.useState('');
+
+  const onSignUpPress = React.useCallback(async () => {
+    if (!isLoaded) return;
+
+    try {
+      await signUp.create({
+        emailAddress,
+        password,
+      });
+
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+      setPendingVerification(true);
+    } catch (err: any) {
+      console.error(JSON.stringify(err, null, 2));
+    }
+  }, [isLoaded, emailAddress, password]);
+
+  const onPressVerify = React.useCallback(async () => {
+    if (!isLoaded) return;
+
+    try {
+      const completeSignUp = await signUp.attemptEmailAddressVerification({
+        code,
+      });
+
+      if (completeSignUp.status === 'complete') {
+        await setActive({ session: completeSignUp.createdSessionId });
+        router.replace('/(tabs)');
+      } else {
+        console.error(JSON.stringify(completeSignUp, null, 2));
+      }
+    } catch (err: any) {
+      console.error(JSON.stringify(err, null, 2));
+    }
+  }, [isLoaded, code]);
+
   return (
-    <View style={styles.container}>
-      <SignUp />
-    </View>
+    <ThemedView style={styles.container}>
+      <ThemedText type="title">
+        {!pendingVerification ? 'Sign Up for EcoTrack' : 'Verify Your Email'}
+      </ThemedText>
+      
+      {!pendingVerification ? (
+        <>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Email</Text>
+            <View style={styles.input}>
+              <Text>Email input placeholder</Text>
+            </View>
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Password</Text>
+            <View style={styles.input}>
+              <Text>Password input placeholder</Text>
+            </View>
+          </View>
+
+          <TouchableOpacity style={styles.button} onPress={onSignUpPress}>
+            <Text style={styles.buttonText}>Sign Up</Text>
+          </TouchableOpacity>
+
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Already have an account? </Text>
+            <Link href="/sign-in">
+              <Text style={styles.link}>Sign in</Text>
+            </Link>
+          </View>
+        </>
+      ) : (
+        <>
+          <Text style={styles.instructionText}>
+            Please enter the verification code sent to your email
+          </Text>
+          
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Verification Code</Text>
+            <View style={styles.input}>
+              <Text>Code input placeholder</Text>
+            </View>
+          </View>
+
+          <TouchableOpacity style={styles.button} onPress={onPressVerify}>
+            <Text style={styles.buttonText}>Verify Email</Text>
+          </TouchableOpacity>
+        </>
+      )}
+    </ThemedView>
   );
 }
 
@@ -15,5 +107,54 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: 20,
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+    color: '#333',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 15,
+    fontSize: 16,
+    backgroundColor: '#f9f9f9',
+  },
+  button: {
+    backgroundColor: '#007AFF',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 30,
+  },
+  footerText: {
+    fontSize: 16,
+    color: '#666',
+  },
+  link: {
+    fontSize: 16,
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  instructionText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 30,
   },
 });
