@@ -4,12 +4,14 @@
 // - dotenv config
 // - CORS enabled
 // - JSON body parsing
+// - Clerk authentication middleware
 // - health check and example routes
 // - graceful shutdown
 
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
+const { ClerkExpressRequireAuth } = require('@clerk/express');
 require('dotenv').config();
 
 const app = express();
@@ -45,6 +47,38 @@ app.post('/api/items', (req, res) => {
 	const { name } = req.body || {};
 	if (!name) return res.status(400).json({ error: 'name is required' });
 	const item = { id: items.length + 1, name, createdAt: new Date().toISOString() };
+	items.push(item);
+	res.status(201).json(item);
+});
+
+// Protected routes - require Clerk authentication
+app.get('/api/protected/profile', ClerkExpressRequireAuth(), (req, res) => {
+	const { userId } = req.auth;
+	res.json({ 
+		message: 'This is a protected route', 
+		userId,
+		user: req.auth 
+	});
+});
+
+app.get('/api/protected/user-items', ClerkExpressRequireAuth(), (req, res) => {
+	const { userId } = req.auth;
+	// Filter items by user (in real app, you'd query database by userId)
+	const userItems = items.filter(item => item.userId === userId);
+	res.json({ items: userItems, userId });
+});
+
+app.post('/api/protected/user-items', ClerkExpressRequireAuth(), (req, res) => {
+	const { userId } = req.auth;
+	const { name } = req.body || {};
+	if (!name) return res.status(400).json({ error: 'name is required' });
+	
+	const item = { 
+		id: items.length + 1, 
+		name, 
+		userId,
+		createdAt: new Date().toISOString() 
+	};
 	items.push(item);
 	res.status(201).json(item);
 });
