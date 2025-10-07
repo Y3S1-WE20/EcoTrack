@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, TextInput } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { useSignIn } from '@clerk/clerk-expo';
 import { Link, router } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
@@ -11,24 +11,37 @@ export default function SignInPage() {
   const [password, setPassword] = React.useState('');
 
   const onSignInPress = React.useCallback(async () => {
-    if (!isLoaded) return;
+    if (!isLoaded || !signIn) {
+      console.log('SignIn not loaded or not available');
+      return;
+    }
+
+    if (!emailAddress.trim() || !password.trim()) {
+      Alert.alert('Error', 'Please enter both email and password');
+      return;
+    }
 
     try {
+      console.log('Attempting sign in with email:', emailAddress);
+      
       const signInAttempt = await signIn.create({
-        identifier: emailAddress,
+        identifier: emailAddress.trim(),
         password,
       });
 
       if (signInAttempt.status === 'complete') {
+        console.log('Sign in complete, setting active session');
         await setActive({ session: signInAttempt.createdSessionId });
         router.replace('/(tabs)');
       } else {
-        console.error(JSON.stringify(signInAttempt, null, 2));
+        console.log('Sign in incomplete:', JSON.stringify(signInAttempt, null, 2));
+        Alert.alert('Sign In Failed', 'Please check your credentials and try again');
       }
     } catch (err: any) {
-      console.error(JSON.stringify(err, null, 2));
+      console.error('Sign in error:', JSON.stringify(err, null, 2));
+      Alert.alert('Error', err.errors?.[0]?.message || 'Sign in failed. Please try again.');
     }
-  }, [isLoaded, emailAddress, password]);
+  }, [isLoaded, signIn, emailAddress, password, setActive]);
 
   return (
     <ThemedView style={styles.container}>

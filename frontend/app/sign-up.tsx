@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, TextInput } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { useSignUp } from '@clerk/clerk-expo';
 import { Link, router } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
@@ -11,41 +11,99 @@ export default function SignUpPage() {
   const [password, setPassword] = React.useState('');
   const [pendingVerification, setPendingVerification] = React.useState(false);
   const [code, setCode] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log('SignUp component mounted');
+    console.log('isLoaded:', isLoaded);
+    console.log('signUp object:', !!signUp);
+  }, [isLoaded, signUp]);
 
   const onSignUpPress = React.useCallback(async () => {
-    if (!isLoaded) return;
+    if (!isLoaded || !signUp || loading) {
+      console.log('SignUp not ready or already loading');
+      return;
+    }
 
+    if (!emailAddress.trim() || !password.trim()) {
+      Alert.alert('Error', 'Please enter both email and password');
+      return;
+    }
+
+    setLoading(true);
     try {
+      console.log('Creating sign up with email:', emailAddress);
+      
       await signUp.create({
-        emailAddress,
+        emailAddress: emailAddress.trim(),
         password,
       });
 
+      console.log('Sign up created, preparing email verification');
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+      
+      console.log('Email verification prepared, showing verification screen');
       setPendingVerification(true);
     } catch (err: any) {
-      console.error(JSON.stringify(err, null, 2));
+      console.error('Sign up error:', JSON.stringify(err, null, 2));
+      Alert.alert('Sign Up Error', err.errors?.[0]?.message || 'Failed to create account');
+    } finally {
+      setLoading(false);
     }
-  }, [isLoaded, emailAddress, password]);
+  }, [isLoaded, signUp, emailAddress, password, loading]);
 
   const onPressVerify = React.useCallback(async () => {
-    if (!isLoaded) return;
+    if (!isLoaded || !signUp || loading) {
+      console.log('SignUp not ready or already loading');
+      return;
+    }
 
+    if (!code.trim()) {
+      Alert.alert('Error', 'Please enter the verification code');
+      return;
+    }
+
+    setLoading(true);
     try {
+      console.log('Attempting email verification with code:', code);
+      
       const completeSignUp = await signUp.attemptEmailAddressVerification({
-        code,
+        code: code.trim(),
       });
 
+      console.log('Verification response:', completeSignUp.status);
+
       if (completeSignUp.status === 'complete') {
+        console.log('Verification complete, setting active session');
         await setActive({ session: completeSignUp.createdSessionId });
         router.replace('/(tabs)');
       } else {
-        console.error(JSON.stringify(completeSignUp, null, 2));
+        console.log('Verification incomplete:', JSON.stringify(completeSignUp, null, 2));
+        Alert.alert('Verification Failed', 'Please check your code and try again');
       }
     } catch (err: any) {
-      console.error(JSON.stringify(err, null, 2));
+      console.error('Verification error:', JSON.stringify(err, null, 2));
+      Alert.alert('Error', err.errors?.[0]?.message || 'Verification failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
-  }, [isLoaded, code]);
+  }, [isLoaded, signUp, code, setActive, loading]);
+
+  const onResendCode = React.useCallback(async () => {
+    if (!isLoaded || !signUp || loading) return;
+
+    setLoading(true);
+    try {
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+      Alert.alert('Success', 'Verification code sent again to your email');
+    } catch (err: any) {
+      console.error('Resend error:', JSON.stringify(err, null, 2));
+      Alert.alert('Error', 'Failed to resend code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [isLoaded, signUp, loading]);
 
   return (
     <ThemedView style={styles.container}>
@@ -80,8 +138,14 @@ export default function SignUpPage() {
             />
           </View>
 
-          <TouchableOpacity style={styles.button} onPress={onSignUpPress}>
-            <Text style={styles.buttonText}>Sign Up</Text>
+          <TouchableOpacity 
+            style={[styles.button, loading && { opacity: 0.6 }]} 
+            onPress={onSignUpPress}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>
+              {loading ? 'Creating Account...' : 'Sign Up'}
+            </Text>
           </TouchableOpacity>
 
           <View style={styles.footer}>
@@ -109,8 +173,24 @@ export default function SignUpPage() {
             />
           </View>
 
-          <TouchableOpacity style={styles.button} onPress={onPressVerify}>
-            <Text style={styles.buttonText}>Verify Email</Text>
+          <TouchableOpacity 
+            style={[styles.button, loading && { opacity: 0.6 }]} 
+            onPress={onPressVerify}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>
+              {loading ? 'Verifying...' : 'Verify Email'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.secondaryButton, loading && { opacity: 0.6 }]} 
+            onPress={onResendCode}
+            disabled={loading}
+          >
+            <Text style={styles.secondaryButtonText}>
+              {loading ? 'Sending...' : 'Resend Code'}
+            </Text>
           </TouchableOpacity>
         </>
       )}
@@ -173,5 +253,19 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     marginBottom: 30,
+  },
+  secondaryButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 15,
+  },
+  secondaryButtonText: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

@@ -11,10 +11,31 @@
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
+const { MongoClient } = require('mongodb');
 const clerkClient = require('@clerk/clerk-sdk-node');
 require('dotenv').config();
 
 const app = express();
+
+// MongoDB connection
+const mongoUri = process.env.MONGODB_URI;
+const databaseName = process.env.DATABASE_NAME;
+let db;
+
+const connectToMongoDB = async () => {
+  try {
+    const client = new MongoClient(mongoUri);
+    await client.connect();
+    db = client.db(databaseName);
+    console.log('Connected to MongoDB successfully');
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    process.exit(1);
+  }
+};
+
+// Connect to MongoDB
+connectToMongoDB();
 
 // Middleware
 app.use(cors());
@@ -49,55 +70,130 @@ app.get('/api/ping', (req, res) => {
 	res.json({ ok: true, ts: Date.now() });
 });
 
+app.get('/api/health', async (req, res) => {
+	try {
+		// Test MongoDB connection
+		await db.admin().ping();
+		const collections = await db.listCollections().toArray();
+		
+		res.json({ 
+			ok: true, 
+			timestamp: new Date().toISOString(),
+			database: databaseName,
+			collections: collections.map(c => c.name),
+			mongodb: 'connected'
+		});
+	} catch (error) {
+		res.status(500).json({ 
+			ok: false, 
+			error: 'MongoDB connection failed',
+			mongodb: 'disconnected' 
+		});
+	}
+});
+
 app.post('/api/echo', (req, res) => {
 	res.json({ received: req.body });
 });
 
-// Example: simple in-memory items resource (GET, POST)
-let items = [];
-
-app.get('/api/items', (req, res) => {
-	res.json({ items });
+// Public items routes (using MongoDB)
+app.get('/api/items', async (req, res) => {
+	try {
+		const items = await db.collection('items').find({}).toArray();
+		res.json({ items });
+	} catch (error) {
+		console.error('Error fetching items:', error);
+		res.status(500).json({ error: 'Failed to fetch items' });
+	}
 });
 
-app.post('/api/items', (req, res) => {
-	const { name } = req.body || {};
-	if (!name) return res.status(400).json({ error: 'name is required' });
-	const item = { id: items.length + 1, name, createdAt: new Date().toISOString() };
-	items.push(item);
-	res.status(201).json(item);
+app.post('/api/items', async (req, res) => {
+	try {
+		const { name } = req.body || {};
+		if (!name) return res.status(400).json({ error: 'name is required' });
+		
+		const item = { 
+			name, 
+			createdAt: new Date().toISOString(),
+			updatedAt: new Date().toISOString()
+		};
+		
+		const result = await db.collection('items').insertOne(item);
+		const newItem = { _id: result.insertedId, ...item };
+		res.status(201).json(newItem);
+	} catch (error) {
+		console.error('Error creating item:', error);
+		res.status(500).json({ error: 'Failed to create item' });
+	}
 });
 
 // Protected routes - require Clerk authentication
-app.get('/api/protected/profile', requireAuth, (req, res) => {
-	const { userId } = req.auth;
-	res.json({ 
-		message: 'This is a protected route', 
-		userId,
-		user: req.auth 
-	});
+app.get('/api/protected/profile', requireAuth, async (req, res) => {
+	try {
+		const { userId } = req.auth;
+		
+		// Try to get user profile from database
+		let userProfile = await db.collection('users').findOne({ userId });
+		
+		if (!userProfile) {
+			// Create a basic profile if it doesn't exist
+			userProfile = {
+				userId,
+				createdAt: new Date().toISOString(),
+				lastLogin: new Date().toISOString()
+			};
+			await db.collection('users').insertOne(userProfile);
+		} else {
+			// Update last login
+			await db.collection('users').updateOne(
+				{ userId },
+				{ $set: { lastLogin: new Date().toISOString() } }
+			);
+		}
+		
+		res.json({ 
+			message: 'This is a protected route', 
+			userId,
+			userProfile,
+			user: req.auth 
+		});
+	} catch (error) {
+		console.error('Error fetching user profile:', error);
+		res.status(500).json({ error: 'Failed to fetch user profile' });
+	}
 });
 
-app.get('/api/protected/user-items', requireAuth, (req, res) => {
-	const { userId } = req.auth;
-	// Filter items by user (in real app, you'd query database by userId)
-	const userItems = items.filter(item => item.userId === userId);
-	res.json({ items: userItems, userId });
+app.get('/api/protected/user-items', requireAuth, async (req, res) => {
+	try {
+		const { userId } = req.auth;
+		const userItems = await db.collection('userItems').find({ userId }).toArray();
+		res.json({ items: userItems, userId });
+	} catch (error) {
+		console.error('Error fetching user items:', error);
+		res.status(500).json({ error: 'Failed to fetch user items' });
+	}
 });
 
-app.post('/api/protected/user-items', requireAuth, (req, res) => {
-	const { userId } = req.auth;
-	const { name } = req.body || {};
-	if (!name) return res.status(400).json({ error: 'name is required' });
-	
-	const item = { 
-		id: items.length + 1, 
-		name, 
-		userId,
-		createdAt: new Date().toISOString() 
-	};
-	items.push(item);
-	res.status(201).json(item);
+app.post('/api/protected/user-items', requireAuth, async (req, res) => {
+	try {
+		const { userId } = req.auth;
+		const { name } = req.body || {};
+		if (!name) return res.status(400).json({ error: 'name is required' });
+		
+		const item = { 
+			name,
+			userId,
+			createdAt: new Date().toISOString(),
+			updatedAt: new Date().toISOString()
+		};
+		
+		const result = await db.collection('userItems').insertOne(item);
+		const newItem = { _id: result.insertedId, ...item };
+		res.status(201).json(newItem);
+	} catch (error) {
+		console.error('Error creating user item:', error);
+		res.status(500).json({ error: 'Failed to create user item' });
+	}
 });
 
 // Start server

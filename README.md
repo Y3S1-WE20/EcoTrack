@@ -40,6 +40,7 @@ EcoTrack/
 - Node.js 16+ and npm
 - Expo CLI: `npm install -g expo-cli`
 - [Clerk account](https://clerk.com) for authentication setup
+- [MongoDB Atlas account](https://www.mongodb.com/cloud/atlas) for database
 
 ### 1. Clone and Install
 
@@ -70,6 +71,8 @@ Edit `backend/.env`:
 PORT=4000
 CLERK_PUBLISHABLE_KEY=pk_test_your-publishable-key-here
 CLERK_SECRET_KEY=sk_test_your-secret-key-here
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/
+DATABASE_NAME=EcoTrack
 ```
 
 #### Frontend Setup
@@ -90,7 +93,15 @@ EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_your-publishable-key-here
 3. Copy the **Publishable Key** and **Secret Key** from the API Keys section
 4. Add them to your `.env` files as shown above
 
-### 4. Run the Applications
+### 4. Set Up MongoDB
+
+1. Sign up at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+2. Create a new cluster (free tier available)
+3. Create a database user with read/write permissions
+4. Get your connection string from "Connect" > "Connect your application"
+5. Add the connection string to `backend/.env` as `MONGODB_URI`
+
+### 5. Run the Applications
 
 #### Start Backend (Terminal 1)
 ```bash
@@ -112,12 +123,15 @@ Scan the QR code with Expo Go app or press `i`/`a` for iOS/Android simulator.
 ### Public Routes
 - `GET /` - Health check
 - `GET /api/ping` - API status check
+- `GET /api/health` - MongoDB connection and database status
 - `POST /api/echo` - Echo request body
+- `GET /api/items` - Get all public items (MongoDB)
+- `POST /api/items` - Create new public item (MongoDB)
 
 ### Protected Routes (require authentication)
-- `GET /api/protected/profile` - Get user profile
-- `GET /api/protected/user-items` - Get user's items
-- `POST /api/protected/user-items` - Create new item for user
+- `GET /api/protected/profile` - Get/create user profile (MongoDB)
+- `GET /api/protected/user-items` - Get user's personal items (MongoDB)
+- `POST /api/protected/user-items` - Create new personal item for user (MongoDB)
 
 ## Development
 
