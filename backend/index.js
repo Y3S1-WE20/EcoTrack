@@ -1,220 +1,160 @@
-
-// Simple Express server for EcoTrack backend
-// Features:
-// - dotenv config
-// - CORS enabled
-// - JSON body parsing
-// - Clerk authentication middleware
-// - health check and example routes
-// - graceful shutdown
-
+﻿// EcoTrack Backend API Server
+// Structured backend following technical architecture
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
-const { MongoClient } = require('mongodb');
-const clerkClient = require('@clerk/clerk-sdk-node');
-require('dotenv').config();
+
+// Import configuration and database
+const config = require('./src/config/environment');
+const DatabaseConfig = require('./src/config/database');
+const createV1Router = require('./src/api/v1');
 
 const app = express();
-
-// MongoDB connection
-const mongoUri = process.env.MONGODB_URI;
-const databaseName = process.env.DATABASE_NAME;
+const dbConfig = new DatabaseConfig();
 let db;
 
-const connectToMongoDB = async () => {
+const initializeDatabase = async () => {
+  db = await dbConfig.connect();
+  initializeRoutes(); // Initialize routes after database connection
+};
+
+// Middleware
+app.use(cors(config.cors));
+app.use(morgan('combined'));
+app.use(express.json());
+
+// Health check routes
+app.get('/', (req, res) => {
+  res.json({
+    message: 'EcoTrack Backend API',
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+    environment: config.nodeEnv
+  });
+});
+
+app.get('/api/ping', (req, res) => {
+  res.json({
+    message: 'pong',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/health', async (req, res) => {
+  const healthStatus = await dbConfig.healthCheck();
+  const response = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    database: healthStatus
+  };
+  const statusCode = healthStatus.status === 'connected' ? 200 : 503;
+  res.status(statusCode).json(response);
+});
+
+// API Routes
+app.use('/api/v1', (req, res, next) => {
+  if (!db) {
+    return res.status(503).json({
+      error: 'Database not ready',
+      message: 'Please wait for database connection'
+    });
+  }
+  req.db = db;
+  next();
+});
+
+// Initialize v1 router after database connection
+let v1Router;
+const initializeRoutes = () => {
+  if (db && !v1Router) {
+    v1Router = createV1Router(db);
+    app.use('/api/v1', v1Router);
+  }
+};
+
+// Legacy routes for backward compatibility
+app.get('/api/protected/profile', (req, res) => {
+  res.redirect(301, '/api/v1/users/profile');
+});
+
+app.put('/api/protected/profile', (req, res) => {
+  res.redirect(301, '/api/v1/users/profile');
+});
+
+app.delete('/api/protected/profile', (req, res) => {
+  res.redirect(301, '/api/v1/users/profile');
+});
+
+app.get('/api/protected/stats', (req, res) => {
+  res.redirect(301, '/api/v1/users/stats');
+});
+
+app.get('/api/protected/user-items', (req, res) => {
+  res.redirect(301, '/api/v1/items');
+});
+
+app.post('/api/protected/user-items', (req, res) => {
+  res.redirect(301, '/api/v1/items');
+});
+
+app.put('/api/protected/user-items/:id', (req, res) => {
+  res.redirect(301, `/api/v1/items/${req.params.id}`);
+});
+
+app.delete('/api/protected/user-items/:id', (req, res) => {
+  res.redirect(301, `/api/v1/items/${req.params.id}`);
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    error: 'Not Found',
+    message: `Route ${req.method} ${req.originalUrl} not found`
+  });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: config.nodeEnv === 'development' ? err.message : 'Something went wrong'
+  });
+});
+
+// Start server
+const startServer = async () => {
   try {
-    const client = new MongoClient(mongoUri);
-    await client.connect();
-    db = client.db(databaseName);
-    console.log('Connected to MongoDB successfully');
+    await initializeDatabase();
+    const server = app.listen(config.port, () => {
+      console.log(` EcoTrack Backend running on http://localhost:${config.port}`);
+      console.log(` Environment: ${config.nodeEnv}`);
+      console.log(` Database: ${config.mongodb.databaseName}`);
+      console.log(` Auth: Clerk JWT`);
+    });
+
+    const shutdown = async (signal) => {
+      console.log(`\n${signal} received. Shutting down gracefully...`);
+      server.close(async () => {
+        console.log('HTTP server closed.');
+        try {
+          await dbConfig.disconnect();
+          console.log('Database connection closed.');
+          process.exit(0);
+        } catch (error) {
+          console.error('Error during shutdown:', error);
+          process.exit(1);
+        }
+      });
+    };
+
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
+    
   } catch (error) {
-    console.error('MongoDB connection error:', error);
+    console.error('Failed to start server:', error);
     process.exit(1);
   }
 };
 
-// Connect to MongoDB
-connectToMongoDB();
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(morgan('dev'));
-
-const PORT = process.env.PORT || 4000;
-
-// Custom Clerk authentication middleware
-const requireAuth = async (req, res, next) => {
-  try {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    if (!token) {
-      return res.status(401).json({ error: 'No token provided' });
-    }
-
-    const decoded = await clerkClient.verifyToken(token);
-    req.auth = { userId: decoded.sub };
-    next();
-  } catch (error) {
-    console.error('Auth error:', error);
-    return res.status(401).json({ error: 'Invalid token' });
-  }
-};
-
-// Simple routes
-app.get('/', (req, res) => {
-	res.send('EcoTrack backend is running');
-});
-
-app.get('/api/ping', (req, res) => {
-	res.json({ ok: true, ts: Date.now() });
-});
-
-app.get('/api/health', async (req, res) => {
-	try {
-		// Test MongoDB connection
-		await db.admin().ping();
-		const collections = await db.listCollections().toArray();
-		
-		res.json({ 
-			ok: true, 
-			timestamp: new Date().toISOString(),
-			database: databaseName,
-			collections: collections.map(c => c.name),
-			mongodb: 'connected'
-		});
-	} catch (error) {
-		res.status(500).json({ 
-			ok: false, 
-			error: 'MongoDB connection failed',
-			mongodb: 'disconnected' 
-		});
-	}
-});
-
-app.post('/api/echo', (req, res) => {
-	res.json({ received: req.body });
-});
-
-// Public items routes (using MongoDB)
-app.get('/api/items', async (req, res) => {
-	try {
-		const items = await db.collection('items').find({}).toArray();
-		res.json({ items });
-	} catch (error) {
-		console.error('Error fetching items:', error);
-		res.status(500).json({ error: 'Failed to fetch items' });
-	}
-});
-
-app.post('/api/items', async (req, res) => {
-	try {
-		const { name } = req.body || {};
-		if (!name) return res.status(400).json({ error: 'name is required' });
-		
-		const item = { 
-			name, 
-			createdAt: new Date().toISOString(),
-			updatedAt: new Date().toISOString()
-		};
-		
-		const result = await db.collection('items').insertOne(item);
-		const newItem = { _id: result.insertedId, ...item };
-		res.status(201).json(newItem);
-	} catch (error) {
-		console.error('Error creating item:', error);
-		res.status(500).json({ error: 'Failed to create item' });
-	}
-});
-
-// Protected routes - require Clerk authentication
-app.get('/api/protected/profile', requireAuth, async (req, res) => {
-	try {
-		const { userId } = req.auth;
-		
-		// Try to get user profile from database
-		let userProfile = await db.collection('users').findOne({ userId });
-		
-		if (!userProfile) {
-			// Create a basic profile if it doesn't exist
-			userProfile = {
-				userId,
-				createdAt: new Date().toISOString(),
-				lastLogin: new Date().toISOString()
-			};
-			await db.collection('users').insertOne(userProfile);
-		} else {
-			// Update last login
-			await db.collection('users').updateOne(
-				{ userId },
-				{ $set: { lastLogin: new Date().toISOString() } }
-			);
-		}
-		
-		res.json({ 
-			message: 'This is a protected route', 
-			userId,
-			userProfile,
-			user: req.auth 
-		});
-	} catch (error) {
-		console.error('Error fetching user profile:', error);
-		res.status(500).json({ error: 'Failed to fetch user profile' });
-	}
-});
-
-app.get('/api/protected/user-items', requireAuth, async (req, res) => {
-	try {
-		const { userId } = req.auth;
-		const userItems = await db.collection('userItems').find({ userId }).toArray();
-		res.json({ items: userItems, userId });
-	} catch (error) {
-		console.error('Error fetching user items:', error);
-		res.status(500).json({ error: 'Failed to fetch user items' });
-	}
-});
-
-app.post('/api/protected/user-items', requireAuth, async (req, res) => {
-	try {
-		const { userId } = req.auth;
-		const { name } = req.body || {};
-		if (!name) return res.status(400).json({ error: 'name is required' });
-		
-		const item = { 
-			name,
-			userId,
-			createdAt: new Date().toISOString(),
-			updatedAt: new Date().toISOString()
-		};
-		
-		const result = await db.collection('userItems').insertOne(item);
-		const newItem = { _id: result.insertedId, ...item };
-		res.status(201).json(newItem);
-	} catch (error) {
-		console.error('Error creating user item:', error);
-		res.status(500).json({ error: 'Failed to create user item' });
-	}
-});
-
-// Start server
-const server = app.listen(PORT, () => {
-	console.log(`EcoTrack backend listening on http://localhost:${PORT}`);
-});
-
-// Graceful shutdown
-const shutdown = (signal) => {
-	console.log(`\nReceived ${signal}, shutting down...`);
-	server.close(() => {
-		console.log('HTTP server closed. Exiting process.');
-		process.exit(0);
-	});
-	// Force exit after 10s
-	setTimeout(() => {
-		console.error('Forcing shutdown');
-		process.exit(1);
-	}, 10000).unref();
-};
-
-process.on('SIGINT', () => shutdown('SIGINT'));
-process.on('SIGTERM', () => shutdown('SIGTERM'));
-
+startServer();

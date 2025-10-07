@@ -8,7 +8,6 @@ import { ThemedView } from '@/components/themed-view';
 export default function SignUpPage() {
   const { signUp, setActive, isLoaded } = useSignUp();
   const [emailAddress, setEmailAddress] = React.useState('');
-  const [password, setPassword] = React.useState('');
   const [pendingVerification, setPendingVerification] = React.useState(false);
   const [code, setCode] = React.useState('');
   const [loading, setLoading] = React.useState(false);
@@ -26,18 +25,18 @@ export default function SignUpPage() {
       return;
     }
 
-    if (!emailAddress.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please enter both email and password');
+    if (!emailAddress.trim()) {
+      Alert.alert('Error', 'Please enter your email address');
       return;
     }
 
     setLoading(true);
     try {
-      console.log('Creating sign up with email:', emailAddress);
+      console.log('Creating passwordless sign up with email:', emailAddress);
       
+      // Create sign up without password - using Clerk's passwordless flow
       await signUp.create({
         emailAddress: emailAddress.trim(),
-        password,
       });
 
       console.log('Sign up created, preparing email verification');
@@ -51,7 +50,7 @@ export default function SignUpPage() {
     } finally {
       setLoading(false);
     }
-  }, [isLoaded, signUp, emailAddress, password, loading]);
+  }, [isLoaded, signUp, emailAddress, loading]);
 
   const onPressVerify = React.useCallback(async () => {
     if (!isLoaded || !signUp || loading) {
@@ -126,17 +125,9 @@ export default function SignUpPage() {
             />
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoComplete="password"
-            />
-          </View>
+          <Text style={styles.infoText}>
+            We'll send you a verification code to complete your registration. No password required!
+          </Text>
 
           <TouchableOpacity 
             style={[styles.button, loading && { opacity: 0.6 }]} 
@@ -144,7 +135,7 @@ export default function SignUpPage() {
             disabled={loading}
           >
             <Text style={styles.buttonText}>
-              {loading ? 'Creating Account...' : 'Sign Up'}
+              {loading ? 'Sending Code...' : 'Send Verification Code'}
             </Text>
           </TouchableOpacity>
 
@@ -267,5 +258,12 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  infoText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 15,
+    fontStyle: 'italic',
   },
 });
