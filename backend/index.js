@@ -17,6 +17,7 @@ const { connectDB, seedInitialData } = require('./config/database');
 const habitRoutes = require('./routes/habitRoutes');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
+const chatRoutes = require('./routes/chatRoutes');
 const config = require('./config/config');
 
 const app = express();
@@ -33,6 +34,7 @@ const PORT = config.PORT;
 app.use(`${config.API_PREFIX}/auth`, authRoutes);
 app.use(`${config.API_PREFIX}/habits`, habitRoutes);
 app.use(`${config.API_PREFIX}/profile`, profileRoutes);
+app.use(`${config.API_PREFIX}/chat`, chatRoutes);
 
 // Health check routes
 app.get('/', (req, res) => {

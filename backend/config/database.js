@@ -45,6 +45,10 @@ const seedInitialData = async () => {
   try {
     const Category = require('../models/Category');
     const Activity = require('../models/Activity');
+    const badgeService = require('../services/badgeService');
+    
+    // Initialize badges first
+    await badgeService.initializeBadges();
     
     // Check if categories already exist
     const categoryCount = await Category.countDocuments();
