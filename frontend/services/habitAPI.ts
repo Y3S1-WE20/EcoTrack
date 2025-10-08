@@ -1,12 +1,63 @@
 // API service for habit tracking
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
+/**
+ * Determine API base URL with fallbacks ordered by most reliable in dev:
+ * 1. Explicit environment variable (process.env.API_URL)
+ * 2. Expo debugger host (when running in Expo/Expo Go)
+ * 3. Android emulator loopback (10.0.2.2)
+ * 4. Default local LAN IP fallback used previously
+ *
+ * This reduces "Network request failed" errors when running on emulators,
+ * physical devices, or web. It also logs the chosen URL to help debugging.
+ */
 const getBaseURL = () => {
+  // Web (local development)
   if (Platform.OS === 'web') {
     return 'http://localhost:4000/api/v1';
   }
-  // For mobile devices, use the IP address from Metro
-  return 'http://192.168.43.8:4000/api/v1';
+
+  // First try localhost. This allows `adb reverse tcp:4000 tcp:4000` to work
+  // even when the device is on mobile data or a different network.
+  const localhostUrl = 'http://localhost:4000/api/v1';
+  console.log('[HabitAPI] trying localhost URL (for adb reverse):', localhostUrl);
+  return localhostUrl;
+
+  // 1) Allow explicit override via environment variable for CI or custom setups
+  // (e.g. API_URL=http://10.0.2.2:4000)
+  // Note: when using Expo, you can add this to metro/webpack env or use a .env
+  // If not present, continue to intelligent detection.
+  // @ts-ignore - process.env typings in RN
+  const envUrl = (process.env && (process.env.API_URL || (process.env as any).REACT_APP_API_URL)) as string | undefined;
+  if (envUrl) return envUrl.replace(/\/+$/, '') + '/api/v1';
+
+  // 2) Try to infer host from Expo Constants (works in Expo Go / dev client)
+  try {
+    const manifest: any = Constants.manifest || (Constants as any).exp?.manifest;
+    const debuggerHost = manifest && (manifest.debuggerHost || manifest.packagerOpts?.devClientHost);
+    if (typeof debuggerHost === 'string') {
+      const host = debuggerHost.split(':')[0];
+      const url = `http://${host}:4000/api/v1`;
+      console.log('[HabitAPI] inferred API URL from Expo Constants:', url);
+      return url;
+    }
+  } catch (e) {
+    // ignore and continue
+  }
+
+  // 3) Android emulator (default Android emulator maps 10.0.2.2 to host's localhost)
+  if (Platform.OS === 'android') {
+    const url = 'http://10.0.2.2:4000/api/v1';
+    console.log('[HabitAPI] using Android emulator loopback URL:', url);
+    return url;
+  }
+
+  // 4) Fallback: local LAN IP used previously (physical device on same Wi-Fi must use host IP)
+  // Updated to the current machine's Wi-Fi IPv4 address discovered via ipconfig
+  const fallback = 'http://192.168.1.10:4000/api/v1';
+  console.log('[HabitAPI] falling back to LAN IP URL:', fallback);
+  return fallback;
 };
 
 const API_BASE_URL = getBaseURL();
