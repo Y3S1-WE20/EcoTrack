@@ -49,6 +49,78 @@ const userSchema = new mongoose.Schema({
       default: {}
     }
   },
+  // Quiz results and profile data
+  quizResult: {
+    answers: [{
+      questionId: String,
+      selectedOptions: [String]
+    }],
+    co2Baseline: {
+      type: Number,
+      default: 0
+    },
+    completedAt: Date
+  },
+  // Weekly challenges
+  currentChallenge: {
+    id: String,
+    title: String,
+    description: String,
+    category: {
+      type: String,
+      enum: ['transport', 'energy', 'food', 'consumption']
+    },
+    targetReduction: Number,
+    progress: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100
+    },
+    startDate: Date,
+    endDate: Date,
+    completed: {
+      type: Boolean,
+      default: false
+    },
+    badge: String
+  },
+  completedChallenges: [{
+    challengeId: String,
+    completedAt: Date,
+    co2Saved: Number
+  }],
+  // Badges and achievements
+  badges: [{
+    id: String,
+    name: String,
+    description: String,
+    icon: String,
+    category: {
+      type: String,
+      enum: ['streak', 'reduction', 'challenge', 'milestone']
+    },
+    earnedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  // Progress tracking
+  stats: {
+    totalCo2Saved: {
+      type: Number,
+      default: 0
+    },
+    streakDays: {
+      type: Number,
+      default: 0
+    },
+    lastActivityDate: Date,
+    activitiesLogged: {
+      type: Number,
+      default: 0
+    }
+  },
   isActive: {
     type: Boolean,
     default: true

@@ -16,6 +16,7 @@ require('dotenv').config();
 const { connectDB, seedInitialData } = require('./config/database');
 const habitRoutes = require('./routes/habitRoutes');
 const authRoutes = require('./routes/authRoutes');
+const profileRoutes = require('./routes/profileRoutes');
 const config = require('./config/config');
 
 const app = express();
@@ -31,6 +32,7 @@ const PORT = config.PORT;
 // API Routes
 app.use(`${config.API_PREFIX}/auth`, authRoutes);
 app.use(`${config.API_PREFIX}/habits`, habitRoutes);
+app.use(`${config.API_PREFIX}/profile`, profileRoutes);
 
 // Health check routes
 app.get('/', (req, res) => {
