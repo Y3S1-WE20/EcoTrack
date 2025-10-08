@@ -77,13 +77,5 @@ module.exports = {
   RATE_LIMIT: {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100 // limit each IP to 100 requests per windowMs
-  },
-
-  // JWT Configuration (for future authentication)
-  JWT_SECRET: process.env.JWT_SECRET || 'eco-track-secret-key',
-  JWT_EXPIRE: process.env.JWT_EXPIRE || '30d',
-
-  // API Configuration
-  API_VERSION: 'v1',
-  API_PREFIX: '/api/v1'
+  }
 };

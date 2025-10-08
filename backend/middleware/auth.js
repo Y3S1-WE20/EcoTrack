@@ -52,6 +52,7 @@ const protect = async (req, res, next) => {
 
       next();
     } catch (jwtError) {
+      console.error('JWT verify error:', jwtError && jwtError.message ? jwtError.message : jwtError);
       return res.status(401).json({
         success: false,
         error: 'Token is not valid'
