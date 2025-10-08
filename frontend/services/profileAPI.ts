@@ -9,7 +9,10 @@ const getBaseUrl = () => {
 // Helper function to make authenticated requests
 const makeAuthenticatedRequest = async (url: string, options: RequestInit = {}) => {
   try {
-    const token = await AsyncStorage.getItem('userToken');
+    const token = await AsyncStorage.getItem('ecotrack_auth_token');
+    
+    console.log('Making authenticated request to:', `${getBaseUrl()}${url}`);
+    console.log('Token available:', !!token);
     
     const headers = {
       'Content-Type': 'application/json',
