@@ -10,8 +10,8 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
-import { authService, type LoginCredentials, type RegisterData } from '@/services/authAPI';
 import { useRouter } from 'expo-router';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true);
@@ -22,6 +22,7 @@ export default function AuthScreen() {
   });
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { signIn, signUp } = useAuth();
 
   const handleSubmit = async () => {
     if (loading) return;
@@ -46,27 +47,23 @@ export default function AuthScreen() {
 
     try {
       if (isLogin) {
-        const credentials: LoginCredentials = {
-          email: formData.email.toLowerCase().trim(),
-          password: formData.password,
-        };
-
-        const response = await authService.login(credentials);
+        const response = await signIn(
+          formData.email.toLowerCase().trim(),
+          formData.password
+        );
         
         if (response.success) {
-          // Navigate to main app
-          router.replace('/(tabs)');
+          // AuthGuard will handle navigation automatically
+          console.log('Login successful');
         } else {
           Alert.alert('Login Failed', response.error || 'Please check your credentials');
         }
       } else {
-        const userData: RegisterData = {
-          name: formData.name.trim(),
-          email: formData.email.toLowerCase().trim(),
-          password: formData.password,
-        };
-
-        const response = await authService.register(userData);
+        const response = await signUp(
+          formData.name.trim(),
+          formData.email.toLowerCase().trim(),
+          formData.password
+        );
         
         if (response.success) {
           Alert.alert(
@@ -75,7 +72,10 @@ export default function AuthScreen() {
             [
               {
                 text: 'Get Started',
-                onPress: () => router.replace('/(tabs)'),
+                onPress: () => {
+                  // AuthGuard will handle navigation automatically
+                  console.log('Registration successful');
+                },
               },
             ]
           );

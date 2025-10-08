@@ -17,7 +17,6 @@ interface AddActivityModalProps {
   visible: boolean;
   onClose: () => void;
   onActivityAdded: () => void;
-  userId: string;
 }
 
 const { width } = Dimensions.get('window');
@@ -26,7 +25,6 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   visible,
   onClose,
   onActivityAdded,
-  userId,
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -105,7 +103,6 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     try {
       setLoading(true);
       const response = await habitAPI.addHabitLog({
-        userId,
         activityId: selectedActivity._id,
         quantity,
         notes: notes.trim() || undefined,

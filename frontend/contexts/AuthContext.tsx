@@ -75,16 +75,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signIn = async (email: string, password: string) => {
     try {
+      console.log('[AuthContext] Attempting sign in...');
       const response = await authService.login({ email, password });
       
       if (response.success && response.data) {
+        console.log('[AuthContext] Sign in successful, setting user');
         setUser(response.data.user);
         return { success: true };
       } else {
+        console.log('[AuthContext] Sign in failed:', response.error);
         return { success: false, error: response.error || 'Login failed' };
       }
     } catch (error) {
-      console.error('Sign in error:', error);
+      console.error('[AuthContext] Sign in error:', error);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Login failed' 
@@ -94,16 +97,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signUp = async (name: string, email: string, password: string) => {
     try {
+      console.log('[AuthContext] Attempting sign up...');
       const response = await authService.register({ name, email, password });
       
       if (response.success && response.data) {
+        console.log('[AuthContext] Sign up successful, setting user');
         setUser(response.data.user);
         return { success: true };
       } else {
+        console.log('[AuthContext] Sign up failed:', response.error);
         return { success: false, error: response.error || 'Registration failed' };
       }
     } catch (error) {
-      console.error('Sign up error:', error);
+      console.error('[AuthContext] Sign up error:', error);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Registration failed' 
