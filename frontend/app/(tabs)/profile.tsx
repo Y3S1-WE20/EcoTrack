@@ -1,8 +1,41 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ProfileScreen = () => {
+  const { user, signOut, isAuthenticated } = useAuth();
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            await signOut();
+          },
+        },
+      ]
+    );
+  };
+
+  if (!isAuthenticated || !user) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.content}>
+          <Text>Please sign in to view your profile</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView}>
@@ -10,25 +43,38 @@ const ProfileScreen = () => {
           {/* Profile Header */}
           <View style={styles.profileHeader}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>👤</Text>
+              <Text style={styles.avatarText}>
+                {user.name.charAt(0).toUpperCase()}
+              </Text>
             </View>
-            <Text style={styles.name}>EcoTracker</Text>
-            <Text style={styles.email}>eco.tracker@example.com</Text>
+            <Text style={styles.name}>{user.name}</Text>
+            <Text style={styles.email}>{user.email}</Text>
+            {user.completedOnboarding && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>✓ Onboarded</Text>
+              </View>
+            )}
           </View>
 
           {/* Stats */}
           <View style={styles.statsContainer}>
             <View style={styles.statCard}>
-              <Text style={styles.statValue}>2.8</Text>
-              <Text style={styles.statLabel}>kg CO₂ Today</Text>
+              <Text style={styles.statValue}>
+                {user.carbonProfile?.baselineCO2?.toFixed(1) || '0.0'}
+              </Text>
+              <Text style={styles.statLabel}>Baseline CO₂</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statValue}>7</Text>
-              <Text style={styles.statLabel}>Days Tracked</Text>
+              <Text style={styles.statValue}>
+                {user.carbonProfile?.goals?.daily?.toFixed(1) || '7.1'}
+              </Text>
+              <Text style={styles.statLabel}>Daily Goal</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statValue}>15%</Text>
-              <Text style={styles.statLabel}>Improvement</Text>
+              <Text style={styles.statValue}>
+                {user.carbonProfile?.lifestyle || 'moderate'}
+              </Text>
+              <Text style={styles.statLabel}>Lifestyle</Text>
             </View>
           </View>
 
@@ -67,6 +113,12 @@ const ProfileScreen = () => {
             <TouchableOpacity style={styles.menuItem}>
               <Text style={styles.menuIcon}>⚙️</Text>
               <Text style={styles.menuText}>Settings</Text>
+              <Text style={styles.menuArrow}>→</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.logoutItem} onPress={handleLogout}>
+              <Text style={styles.menuIcon}>🚪</Text>
+              <Text style={styles.logoutText}>Sign Out</Text>
               <Text style={styles.menuArrow}>→</Text>
             </TouchableOpacity>
           </View>
@@ -178,6 +230,39 @@ const styles = StyleSheet.create({
   menuArrow: {
     fontSize: 16,
     color: '#666',
+  },
+  badge: {
+    backgroundColor: '#22c55e',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  badgeText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  logoutItem: {
+    backgroundColor: '#fee2e2',
+    borderRadius: 16,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  logoutText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#dc2626',
   },
   appInfo: {
     alignItems: 'center',

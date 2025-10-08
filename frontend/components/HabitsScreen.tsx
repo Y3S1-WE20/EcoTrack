@@ -17,29 +17,30 @@ import AddActivityModal from './AddActivityModal';
 import ProgressCard from './ProgressCard';
 import ActivityList from './ActivityList';
 import { habitAPI, TodayData } from '../services/habitAPI';
+import { useAuth } from '@/contexts/AuthContext';
 
 const HabitsScreen = () => {
   const [todayData, setTodayData] = useState<TodayData | null>(null);
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  // For demo purposes, using a fixed user ID
-  const userId = 'user123';
+  const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    loadTodayData();
-  }, []);
+    if (isAuthenticated) {
+      loadTodayData();
+    }
+  }, [isAuthenticated]);
 
   const loadTodayData = async () => {
     try {
       setLoading(true);
-      const response = await habitAPI.getTodayImpact(userId);
+      const response = await habitAPI.getTodayImpact(); // No userId needed - uses JWT
       if (response.success && response.data) {
         setTodayData(response.data);
       } else {
         // Fallback data when API is not available
-        console.warn('API not available, using fallback data');
+        console.warn('API not available, using fallback data:', response.error);
         setTodayData({
           todayTotal: 0,
           weeklyGoal: 50,
@@ -73,6 +74,17 @@ const HabitsScreen = () => {
     setIsAddModalVisible(false);
     await loadTodayData(); // Refresh data after adding activity
   };
+
+  // Don't render anything if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text>Please sign in to continue</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (loading) {
     return (
@@ -160,7 +172,6 @@ const HabitsScreen = () => {
         visible={isAddModalVisible}
         onClose={() => setIsAddModalVisible(false)}
         onActivityAdded={handleActivityAdded}
-        userId={userId}
       />
     </SafeAreaView>
   );
