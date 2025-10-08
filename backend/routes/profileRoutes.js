@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { submitQuiz, getProfile, updateChallengeProgress } = require('../controllers/profileController');
-const auth = require('../middleware/auth');
+const { protect } = require('../middleware/auth');
 
 // All profile routes require authentication
-router.use(auth);
+router.use(protect);
 
 // POST /api/v1/profile/quiz - Submit onboarding quiz
 router.post('/quiz', submitQuiz);
