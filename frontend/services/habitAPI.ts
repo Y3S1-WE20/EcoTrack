@@ -1,6 +1,7 @@
 // API service for habit tracking
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
+import { authService } from './authAPI';
 
 /**
  * Determine API base URL with fallbacks ordered by most reliable in dev:
@@ -23,41 +24,6 @@ const getBaseURL = () => {
   const localhostUrl = 'http://localhost:4000/api/v1';
   console.log('[HabitAPI] trying localhost URL (for adb reverse):', localhostUrl);
   return localhostUrl;
-
-  // 1) Allow explicit override via environment variable for CI or custom setups
-  // (e.g. API_URL=http://10.0.2.2:4000)
-  // Note: when using Expo, you can add this to metro/webpack env or use a .env
-  // If not present, continue to intelligent detection.
-  // @ts-ignore - process.env typings in RN
-  const envUrl = (process.env && (process.env.API_URL || (process.env as any).REACT_APP_API_URL)) as string | undefined;
-  if (envUrl) return envUrl.replace(/\/+$/, '') + '/api/v1';
-
-  // 2) Try to infer host from Expo Constants (works in Expo Go / dev client)
-  try {
-    const manifest: any = Constants.manifest || (Constants as any).exp?.manifest;
-    const debuggerHost = manifest && (manifest.debuggerHost || manifest.packagerOpts?.devClientHost);
-    if (typeof debuggerHost === 'string') {
-      const host = debuggerHost.split(':')[0];
-      const url = `http://${host}:4000/api/v1`;
-      console.log('[HabitAPI] inferred API URL from Expo Constants:', url);
-      return url;
-    }
-  } catch (e) {
-    // ignore and continue
-  }
-
-  // 3) Android emulator (default Android emulator maps 10.0.2.2 to host's localhost)
-  if (Platform.OS === 'android') {
-    const url = 'http://10.0.2.2:4000/api/v1';
-    console.log('[HabitAPI] using Android emulator loopback URL:', url);
-    return url;
-  }
-
-  // 4) Fallback: local LAN IP used previously (physical device on same Wi-Fi must use host IP)
-  // Updated to the current machine's Wi-Fi IPv4 address discovered via ipconfig
-  const fallback = 'http://192.168.1.10:4000/api/v1';
-  console.log('[HabitAPI] falling back to LAN IP URL:', fallback);
-  return fallback;
 };
 
 const API_BASE_URL = getBaseURL();
@@ -118,12 +84,21 @@ class HabitAPI {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     try {
+      const token = await authService.getToken();
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...options.headers as Record<string, string>,
+      };
+
+      // Add authorization header if token exists
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
         ...options,
+        headers,
       });
 
       const data = await response.json();
@@ -155,14 +130,13 @@ class HabitAPI {
     }
   }
 
-  // Get today's impact data for a user
-  async getTodayImpact(userId: string): Promise<ApiResponse<TodayData>> {
-    return this.request<TodayData>(`/habits/today/${userId}`);
+  // Get today's impact data for current user (authenticated)
+  async getTodayImpact(): Promise<ApiResponse<TodayData>> {
+    return this.request<TodayData>('/habits/today');
   }
 
-  // Add a new habit log
+  // Add a new habit log (authenticated)
   async addHabitLog(habitData: {
-    userId: string;
     activityId: string;
     quantity: number;
     notes?: string;
@@ -175,19 +149,18 @@ class HabitAPI {
     });
   }
 
-  // Get all categories
+  // Get all categories (public)
   async getCategories(): Promise<ApiResponse<Category[]>> {
     return this.request<Category[]>('/habits/categories');
   }
 
-  // Get activities by category
+  // Get activities by category (public)
   async getActivitiesByCategory(categoryId: string): Promise<ApiResponse<Activity[]>> {
     return this.request<Activity[]>(`/habits/activities/${categoryId}`);
   }
 
-  // Get user's activity history
+  // Get current user's activity history (authenticated)
   async getActivityHistory(
-    userId: string,
     params?: {
       page?: number;
       limit?: number;
@@ -207,13 +180,13 @@ class HabitAPI {
 
     const queryString = searchParams.toString();
     return this.request<{ activities: HabitLog[]; pagination: any }>(
-      `/habits/history/${userId}${queryString ? `?${queryString}` : ''}`
+      `/habits/history${queryString ? `?${queryString}` : ''}`
     );
   }
 
-  // Get weekly statistics
-  async getWeeklyStats(userId: string): Promise<ApiResponse<any>> {
-    return this.request<any>(`/habits/stats/weekly/${userId}`);
+  // Get weekly statistics for current user (authenticated)
+  async getWeeklyStats(): Promise<ApiResponse<any>> {
+    return this.request<any>('/habits/stats/weekly');
   }
 
   // Update habit log
