@@ -82,8 +82,9 @@ const startServer = async () => {
 		console.log('✅ Initial data seeded');
 
 		// Start server
-		const server = app.listen(PORT, () => {
+		const server = app.listen(PORT, '0.0.0.0', () => {
 			console.log(`🚀 EcoTrack backend listening on http://localhost:${PORT}`);
+			console.log(`🌐 Also accessible at http://0.0.0.0:${PORT} for mobile devices`);
 			console.log(`📚 API Documentation: http://localhost:${PORT}${config.API_PREFIX}`);
 		});
 
