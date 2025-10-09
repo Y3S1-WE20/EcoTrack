@@ -83,6 +83,18 @@ class AuthService {
 
       const data = await response.json();
 
+      // If server indicates unauthorized, clear local credentials so user is forced to re-authenticate
+      if (response.status === 401) {
+        console.warn('[AuthAPI] Received 401 Unauthorized - clearing stored token and user data');
+        try {
+          await this.removeToken();
+          await this.removeUser();
+        } catch (clearErr) {
+          console.error('[AuthAPI] Error clearing credentials after 401:', clearErr);
+        }
+        throw new Error(data.error || 'Unauthorized');
+      }
+
       if (!response.ok) {
         throw new Error(data.error || `HTTP error! status: ${response.status}`);
       }

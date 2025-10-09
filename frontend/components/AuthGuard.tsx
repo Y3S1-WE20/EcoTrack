@@ -16,13 +16,28 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     if (isLoading) return; // Don't redirect while loading
 
     const inAuthGroup = segments[0] === 'auth';
+    const inOnboarding = segments[0] === 'onboarding';
+    const inMainApp = segments[0] === '(tabs)';
 
-    if (!user && !inAuthGroup) {
-      // User is not authenticated and not on auth screen, redirect to auth
-      router.replace('/auth');
-    } else if (user && inAuthGroup) {
-      // User is authenticated but on auth screen, redirect to main app
-      router.replace('/(tabs)');
+    if (!user) {
+      // User is not authenticated
+      if (!inAuthGroup) {
+        router.replace('/auth');
+      }
+    } else {
+      // User is authenticated
+      const needsOnboarding = !user.completedOnboarding;
+      
+      if (needsOnboarding && !inOnboarding) {
+        // User needs onboarding, redirect to onboarding
+        router.replace('/onboarding');
+      } else if (!needsOnboarding && (inAuthGroup || inOnboarding)) {
+        // User completed onboarding but is on auth/onboarding screen
+        router.replace('/(tabs)');
+      } else if (needsOnboarding && inMainApp) {
+        // User somehow reached main app without completing onboarding
+        router.replace('/onboarding');
+      }
     }
   }, [user, isLoading, segments]);
 

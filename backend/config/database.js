@@ -2,7 +2,14 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    const mongoURI = `${process.env.MONGODB_URI}${process.env.DATABASE_NAME}`;
+    // Use MONGODB_URI directly if it already includes database name
+    // Otherwise append DATABASE_NAME
+    let mongoURI = process.env.MONGODB_URI;
+    if (!mongoURI.includes('/') || mongoURI.endsWith('/')) {
+      mongoURI = mongoURI.endsWith('/') 
+        ? `${mongoURI}${process.env.DATABASE_NAME}`
+        : `${mongoURI}/${process.env.DATABASE_NAME}`;
+    }
     
     const conn = await mongoose.connect(mongoURI, {
       useNewUrlParser: true,

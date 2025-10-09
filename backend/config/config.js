@@ -9,6 +9,14 @@ module.exports = {
   MONGODB_URI: process.env.MONGODB_URI,
   DATABASE_NAME: process.env.DATABASE_NAME || 'EcoTrack',
 
+  // JWT Configuration
+  JWT_SECRET: process.env.JWT_SECRET || 'fallback-secret-key-for-development',
+  JWT_EXPIRE: process.env.JWT_EXPIRE || '30d',
+
+  // API Configuration
+  API_VERSION: '1.0.0',
+  API_PREFIX: '/api/v1',
+
   // CO2 Calculation Factors (kg CO2 per unit)
   CO2_FACTORS: {
     transport: {
@@ -69,13 +77,5 @@ module.exports = {
   RATE_LIMIT: {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100 // limit each IP to 100 requests per windowMs
-  },
-
-  // JWT Configuration (for future authentication)
-  JWT_SECRET: process.env.JWT_SECRET || 'eco-track-secret-key',
-  JWT_EXPIRE: process.env.JWT_EXPIRE || '30d',
-
-  // API Configuration
-  API_VERSION: 'v1',
-  API_PREFIX: '/api/v1'
+  }
 };
