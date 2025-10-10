@@ -2,19 +2,34 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
+/**
+ * Determine API base URL with fallbacks for better mobile connectivity
+ */
 const getBaseURL = () => {
   // Web (local development)
   if (Platform.OS === 'web') {
     return 'http://localhost:4000/api/v1';
   }
 
-  // First try localhost for adb reverse
-  const localhostUrl = 'http://localhost:4000/api/v1';
-  console.log('[AuthAPI] using localhost URL (for adb reverse):', localhostUrl);
-  return localhostUrl;
+  // For mobile devices, we'll use a fallback system in the request method
+  const fallbackUrls = [
+    'http://localhost:4000/api/v1',        // ADB reverse
+    'http://10.0.2.2:4000/api/v1',        // Android emulator
+    'http://192.168.1.10:4000/api/v1',    // Local network IP
+    'http://192.168.56.1:4000/api/v1'     // VirtualBox/VMware IP
+  ];
+
+  console.log('[AuthAPI] Will try URLs in order:', fallbackUrls);
+  return fallbackUrls[0]; // Start with localhost
 };
 
 const API_BASE_URL = getBaseURL();
+const FALLBACK_URLS = [
+  'http://localhost:4000/api/v1',
+  'http://10.0.2.2:4000/api/v1',
+  'http://192.168.1.10:4000/api/v1',
+  'http://192.168.56.1:4000/api/v1'
+];
 const TOKEN_KEY = 'ecotrack_auth_token';
 const USER_KEY = 'ecotrack_user_data';
 
@@ -59,10 +74,7 @@ export interface RegisterData {
 }
 
 class AuthService {
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  private async tryRequest<T>(url: string, endpoint: string, options: RequestInit = {}): Promise<T> {
     const token = await this.getToken();
     
     const headers: Record<string, string> = {
@@ -75,48 +87,65 @@ class AuthService {
       headers.Authorization = `Bearer ${token}`;
     }
 
-    try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        ...options,
-        headers,
-      });
+    console.log(`[AuthAPI] Trying: ${url}${endpoint}`);
+    
+    const response = await fetch(`${url}${endpoint}`, {
+      ...options,
+      headers,
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      // If server indicates unauthorized, clear local credentials so user is forced to re-authenticate
-      if (response.status === 401) {
-        console.warn('[AuthAPI] Received 401 Unauthorized - clearing stored token and user data');
-        try {
-          await this.removeToken();
-          await this.removeUser();
-        } catch (clearErr) {
-          console.error('[AuthAPI] Error clearing credentials after 401:', clearErr);
-        }
-        throw new Error(data.error || 'Unauthorized');
+    // If server indicates unauthorized, clear local credentials so user is forced to re-authenticate
+    if (response.status === 401) {
+      console.warn('[AuthAPI] Received 401 Unauthorized - clearing stored token and user data');
+      try {
+        await this.removeToken();
+        await this.removeUser();
+      } catch (clearErr) {
+        console.error('[AuthAPI] Error clearing credentials after 401:', clearErr);
       }
-
-      if (!response.ok) {
-        throw new Error(data.error || `HTTP error! status: ${response.status}`);
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Auth API request failed:', error);
-      
-      // Provide more specific error messages
-      let errorMessage = 'Unknown error';
-      if (error instanceof Error) {
-        if (error.message.includes('Network request failed')) {
-          errorMessage = 'Cannot connect to server. Please check your internet connection and try again.';
-        } else if (error.message.includes('timeout')) {
-          errorMessage = 'Request timed out. Please try again.';
-        } else {
-          errorMessage = error.message;
-        }
-      }
-      
-      throw new Error(errorMessage);
+      throw new Error(data.error || 'Unauthorized');
     }
+
+    if (!response.ok) {
+      throw new Error(data.error || `HTTP error! status: ${response.status}`);
+    }
+
+    return data;
+  }
+
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> {
+    let lastError: Error | null = null;
+    
+    // On web, just use localhost
+    if (Platform.OS === 'web') {
+      return this.tryRequest('http://localhost:4000/api/v1', endpoint, options);
+    }
+
+    // On mobile, try each URL until one works
+    for (const baseUrl of FALLBACK_URLS) {
+      try {
+        const result = await this.tryRequest<T>(baseUrl, endpoint, options);
+        console.log(`[AuthAPI] Success with: ${baseUrl}`);
+        return result;
+      } catch (error) {
+        console.log(`[AuthAPI] Failed with ${baseUrl}:`, error);
+        lastError = error instanceof Error ? error : new Error('Unknown error');
+        continue;
+      }
+    }
+
+    // If all URLs failed, provide helpful error message
+    const errorMessage = lastError?.message || 'Unknown error';
+    if (errorMessage.includes('Network request failed') || errorMessage.includes('fetch')) {
+      throw new Error('Cannot connect to server. Please ensure the backend is running and check your network connection.\n\nTroubleshooting:\n1. Make sure the backend server is running\n2. Try: adb reverse tcp:4000 tcp:4000\n3. Check your WiFi connection');
+    }
+    
+    throw lastError || new Error('All connection attempts failed');
   }
 
   // Token management

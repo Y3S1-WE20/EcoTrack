@@ -6,7 +6,8 @@ import {
   FlatList, 
   Alert,
   ActivityIndicator,
-  RefreshControl
+  RefreshControl,
+  TouchableOpacity
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -14,6 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import MessageBubble, { Message } from '@/components/chat/MessageBubble';
 import ChatInput from '@/components/chat/ChatInput';
 import chatAPI, { ChatResponse } from '@/services/chatAPI';
+import clearAllStoredData from '@/utils/clearStorage';
 
 const AssistantScreen = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -47,6 +49,26 @@ const AssistantScreen = () => {
     } catch (error) {
       console.error('Failed to initialize chat:', error);
     }
+  };
+
+  const handleClearData = async () => {
+    Alert.alert(
+      'Clear App Data',
+      'This will clear all stored data including login credentials. Are you sure?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear Data',
+          style: 'destructive',
+          onPress: async () => {
+            const success = await clearAllStoredData();
+            if (success) {
+              Alert.alert('Success', 'App data cleared. Please restart the app.');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleSendMessage = async (messageText: string) => {
@@ -120,10 +142,20 @@ const AssistantScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>💬 EcoTrack Assistant</Text>
-        <Text style={styles.subtitle}>
-          Log activities and get personalized eco tips
-        </Text>
+        <View style={styles.headerContent}>
+          <View>
+            <Text style={styles.title}>💬 EcoTrack Assistant</Text>
+            <Text style={styles.subtitle}>
+              Log activities and get personalized eco tips
+            </Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.resetButton} 
+            onPress={handleClearData}
+          >
+            <Text style={styles.resetButtonText}>🧹 Reset</Text>
+          </TouchableOpacity>
+        </View>
       </View>
       
       <FlatList
@@ -164,6 +196,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  resetButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#66BB6A',
+  },
+  resetButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
   },
   title: {
     fontSize: 24,
