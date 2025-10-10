@@ -5,7 +5,7 @@ const { CHALLENGE_TEMPLATES, INITIAL_BADGES } = require('../data/challengeData')
 exports.submitQuiz = async (req, res) => {
   try {
     const { answers } = req.body;
-    const userId = req.user._id;
+    const userId = req.user.userId; // Fixed: use userId instead of _id
 
     if (!answers || !Array.isArray(answers)) {
       return res.status(400).json({
@@ -94,7 +94,7 @@ exports.submitQuiz = async (req, res) => {
 // Get user profile with all data
 exports.getProfile = async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.userId; // Fixed: use userId instead of _id
 
     const user = await User.findById(userId);
     
@@ -166,7 +166,7 @@ exports.getProfile = async (req, res) => {
 exports.updateChallengeProgress = async (req, res) => {
   try {
     const { progress, completed } = req.body;
-    const userId = req.user._id;
+    const userId = req.user.userId; // Fixed: use userId instead of _id
 
     const user = await User.findById(userId);
     

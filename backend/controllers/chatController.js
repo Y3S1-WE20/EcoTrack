@@ -146,7 +146,7 @@ const processMessage = async (req, res) => {
 
         // Create habit log
         const habitLog = await HabitLog.create({
-          user: req.user._id,
+          user: req.user.userId, // Fixed: use userId instead of _id
           activity: activity._id,
           quantity: parsed.amount,
           unit: parsed.unit,
@@ -166,7 +166,7 @@ const processMessage = async (req, res) => {
         console.log('Created habit log:', habitLogId);
 
         // Check for badge achievements
-        const newBadges = await badgeService.checkBadges(req.user._id, habitLog);
+        const newBadges = await badgeService.checkBadges(req.user.userId, habitLog); // Fixed: use userId instead of _id
         if (newBadges.length > 0) {
           const badgeNames = newBadges.map(b => b.badge.name).join(', ');
           responseMessage += ` 🏆 Congratulations! You earned: ${badgeNames}!`;
@@ -223,7 +223,7 @@ const getChatHistory = async (req, res) => {
 
     // Get recent habit logs with chat data
     const habitLogs = await HabitLog.find({
-      user: req.user._id,
+      user: req.user.userId, // Fixed: use userId instead of _id
       'parsedData.originalMessage': { $exists: true }
     })
     .populate('activity', 'name category')
@@ -251,7 +251,7 @@ const getChatHistory = async (req, res) => {
         page,
         limit,
         total: await HabitLog.countDocuments({
-          user: req.user._id,
+          user: req.user.userId, // Fixed: use userId instead of _id
           'parsedData.originalMessage': { $exists: true }
         })
       }
@@ -274,7 +274,7 @@ const getChatHistory = async (req, res) => {
 const getActivitySuggestions = async (req, res) => {
   try {
     // Get user's recent activities
-    const recentLogs = await HabitLog.find({ user: req.user._id })
+    const recentLogs = await HabitLog.find({ user: req.user.userId }) // Fixed: use userId instead of _id
       .populate('activity', 'name category')
       .sort({ createdAt: -1 })
       .limit(50);
