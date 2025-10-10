@@ -104,7 +104,7 @@ const SettingsScreen = () => {
             
             <TouchableOpacity 
               style={styles.menuItem}
-              onPress={() => showAlert('Profile', 'Edit profile feature coming soon!')}
+              onPress={() => router.push('/edit-profile')}
             >
               <Text style={styles.menuIcon}>👤</Text>
               <Text style={styles.menuText}>Edit Profile</Text>
@@ -113,7 +113,16 @@ const SettingsScreen = () => {
 
             <TouchableOpacity 
               style={styles.menuItem}
-              onPress={() => showAlert('Privacy', 'Privacy settings feature coming soon!')}
+              onPress={() => router.push('/notifications')}
+            >
+              <Text style={styles.menuIcon}>🔔</Text>
+              <Text style={styles.menuText}>Notifications</Text>
+              <Text style={styles.menuArrow}>→</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => router.push('/privacy-security')}
             >
               <Text style={styles.menuIcon}>🔒</Text>
               <Text style={styles.menuText}>Privacy & Security</Text>
@@ -122,10 +131,33 @@ const SettingsScreen = () => {
 
             <TouchableOpacity 
               style={styles.menuItem}
-              onPress={() => showAlert('Data', 'Data export feature coming soon!')}
+              onPress={() => router.push('/export-data')}
             >
               <Text style={styles.menuIcon}>📊</Text>
               <Text style={styles.menuText}>Export Data</Text>
+              <Text style={styles.menuArrow}>→</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Climate Action Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Climate Action</Text>
+            
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => router.push('/carbon-offset-program')}
+            >
+              <Text style={styles.menuIcon}>🌳</Text>
+              <Text style={styles.menuText}>Carbon Offset Program</Text>
+              <Text style={styles.menuArrow}>→</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => router.push('/learn-sustainability')}
+            >
+              <Text style={styles.menuIcon}>📚</Text>
+              <Text style={styles.menuText}>Learn About Sustainability</Text>
               <Text style={styles.menuArrow}>→</Text>
             </TouchableOpacity>
           </View>
@@ -136,7 +168,7 @@ const SettingsScreen = () => {
             
             <TouchableOpacity 
               style={styles.menuItem}
-              onPress={() => showAlert('Help', 'Help center feature coming soon!')}
+              onPress={() => router.push('/help-support')}
             >
               <Text style={styles.menuIcon}>❓</Text>
               <Text style={styles.menuText}>Help & Support</Text>
@@ -145,7 +177,7 @@ const SettingsScreen = () => {
 
             <TouchableOpacity 
               style={styles.menuItem}
-              onPress={() => showAlert('Feedback', 'Feedback feature coming soon!')}
+              onPress={() => router.push('/send-feedback')}
             >
               <Text style={styles.menuIcon}>💬</Text>
               <Text style={styles.menuText}>Send Feedback</Text>
@@ -154,7 +186,7 @@ const SettingsScreen = () => {
 
             <TouchableOpacity 
               style={styles.menuItem}
-              onPress={() => showAlert('Terms', 'Terms of service feature coming soon!')}
+              onPress={() => router.push('/terms-of-service')}
             >
               <Text style={styles.menuIcon}>📄</Text>
               <Text style={styles.menuText}>Terms of Service</Text>
@@ -163,7 +195,7 @@ const SettingsScreen = () => {
 
             <TouchableOpacity 
               style={styles.menuItem}
-              onPress={() => showAlert('Privacy Policy', 'Privacy policy feature coming soon!')}
+              onPress={() => router.push('/privacy-policy')}
             >
               <Text style={styles.menuIcon}>🛡️</Text>
               <Text style={styles.menuText}>Privacy Policy</Text>

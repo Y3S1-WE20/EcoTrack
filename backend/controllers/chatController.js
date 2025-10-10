@@ -30,7 +30,28 @@ const processMessage = async (req, res) => {
 
     console.log('Processing chat message:', message);
 
-    // Parse the message using NLP service
+    // First check if this is a general conversation or greeting
+    const isActivityMessage = nlpService.isActivityRelated(message);
+    
+    if (!isActivityMessage && geminiService.isAvailable()) {
+      try {
+        console.log('Handling as general conversation with Gemini AI');
+        const conversationResponse = await geminiService.handleConversation(message);
+        if (conversationResponse) {
+          return res.json({
+            success: true,
+            message: conversationResponse.response,
+            type: 'conversation',
+            aiEnhanced: true,
+            needsAuth: false
+          });
+        }
+      } catch (aiError) {
+        console.error('Gemini conversation failed:', aiError);
+      }
+    }
+
+    // Parse the message using NLP service for activity extraction
     let parsed = nlpService.parseMessage(message);
 
     // Enhance with Gemini AI if available

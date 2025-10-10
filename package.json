@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "expo-file-system": "^19.0.17",
+    "expo-image-picker": "^17.0.8",
+    "expo-print": "^15.0.7",
+    "expo-sharing": "^14.0.7"
+  }
+}

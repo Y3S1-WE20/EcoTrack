@@ -309,6 +309,72 @@ class NLPService {
 
     return suggestions;
   }
+
+  /**
+   * Check if a message is likely related to activity logging
+   * Returns true if the message contains activity-related keywords
+   */
+  isActivityRelated(message) {
+    if (!message || typeof message !== 'string') {
+      return false;
+    }
+
+    const messageLower = message.toLowerCase().trim();
+    
+    // Common greetings and conversational starters should NOT be treated as activity-related
+    const conversationalPatterns = [
+      /^(hi|hello|hey|good morning|good afternoon|good evening|howdy)$/i,
+      /^(how are you|how's it going|what's up|whats up)$/i,
+      /^(thanks|thank you|bye|goodbye|see you)$/i,
+      /^(help|what can you do|what do you do)$/i,
+      /^(yes|no|ok|okay|sure|maybe|i don't know)$/i
+    ];
+
+    // If it matches conversational patterns, it's NOT activity-related
+    if (conversationalPatterns.some(pattern => pattern.test(messageLower))) {
+      return false;
+    }
+
+    const activityKeywords = [
+      // Transportation
+      'drove', 'drive', 'driving', 'car', 'vehicle',
+      'bus', 'train', 'subway', 'metro', 'transit', 'public transport',
+      'walk', 'walked', 'walking', 'bike', 'biked', 'cycling', 'cycled',
+      'flight', 'flew', 'airplane', 'plane', 'taxi', 'uber', 'lyft',
+      
+      // Energy
+      'electricity', 'power', 'energy', 'kwh', 'kilowatt',
+      'heating', 'cooling', 'air conditioning', 'ac',
+      
+      // Waste/Recycling
+      'recycle', 'recycled', 'trash', 'garbage', 'waste',
+      'compost', 'composted', 'bottles', 'cans', 'plastic',
+      
+      // Food
+      'meal', 'food', 'ate', 'eating', 'meat', 'vegetarian', 'vegan',
+      
+      // Units and quantities
+      'km', 'kilometers', 'miles', 'mi', 'kwh', 'kg', 'pounds', 'lbs',
+      
+      // Activity indicators
+      'today', 'yesterday', 'this morning', 'this evening',
+      'logged', 'log', 'track', 'record'
+    ];
+    
+    // Check for numbers (indicating quantities)
+    const hasNumbers = /\d+/.test(message);
+    
+    // Check for activity keywords
+    const hasActivityKeywords = activityKeywords.some(keyword => 
+      messageLower.includes(keyword)
+    );
+
+    // Check for first-person activity patterns
+    const hasFirstPersonActivity = /\b(i|we)\s+(drove|walked|took|used|recycled|ate|had)\b/i.test(message);
+
+    // Consider it activity-related if it has numbers + keywords, or clear first-person activity
+    return (hasNumbers && hasActivityKeywords) || hasFirstPersonActivity;
+  }
 }
 
 module.exports = new NLPService();

@@ -13,6 +13,9 @@ export interface User {
   _id: string;
   name: string;
   email: string;
+  profileImage?: string;
+  phone?: string;
+  bio?: string;
   completedOnboarding: boolean;
   carbonProfile?: {
     lifestyle: string;
