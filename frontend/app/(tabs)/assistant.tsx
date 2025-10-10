@@ -36,7 +36,7 @@ const AssistantScreen = () => {
       // Add welcome message
       const welcomeMessage: Message = {
         id: 'welcome',
-        text: "Hi! I'm your EcoTrack assistant 🌱\n\nI can help you log your daily activities and track your carbon footprint. Try saying something like:\n• 'I drove 10 km to work'\n• 'Took the bus for 5 miles'\n• 'Walked 2 km today'",
+        text: "Hello! I'm EcoTrack, your friendly AI assistant! 🌱✨\n\nI can help you with:\n• Tracking daily activities and carbon footprint\n• Answering questions about sustainability\n• Providing eco-friendly tips and advice\n• General conversation about environmental topics\n\nTry asking me anything - from 'Hi, how are you?' to 'I drove 10 km today' or 'What are some ways to reduce my carbon footprint?'",
         isUser: false,
         timestamp: new Date(),
       };
@@ -106,22 +106,33 @@ const AssistantScreen = () => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to send message:', error);
       
+      let errorMessage = "Sorry, I'm having trouble processing your request right now. 🤖";
+      let alertTitle = 'Connection Error';
+      let alertMessage = 'Unable to connect to the assistant. Please check your connection and try again.';
+      
+      if (error?.message?.includes('timeout')) {
+        errorMessage = "Request timed out. The server might be busy. Please try again. ⏱️";
+        alertTitle = 'Request Timeout';
+        alertMessage = 'The request took too long. Please check your internet connection and try again.';
+      } else if (error?.message?.includes('fetch')) {
+        errorMessage = "Network connection failed. Please check your internet. 📡";
+        alertTitle = 'Network Error';
+        alertMessage = 'Cannot reach the server. Make sure you have an active internet connection.';
+      }
+      
       // Add error message
-      const errorMessage: Message = {
+      const errorBotMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: "Sorry, I'm having trouble processing your request right now. Please try again later. 🤖",
+        text: errorMessage,
         isUser: false,
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => [...prev, errorBotMessage]);
       
-      Alert.alert(
-        'Connection Error',
-        'Unable to connect to the assistant. Please check your internet connection and try again.'
-      );
+      Alert.alert(alertTitle, alertMessage);
     } finally {
       setIsLoading(false);
     }

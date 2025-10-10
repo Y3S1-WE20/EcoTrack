@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system';
+import { documentDirectory, EncodingType, writeAsStringAsync } from 'expo-file-system';
 
 const ExportDataScreen = () => {
   const router = useRouter();
@@ -233,7 +233,7 @@ const ExportDataScreen = () => {
 
       // Save to device storage
       const fileName = `ecotrack-export-${new Date().toISOString().split('T')[0]}.pdf`;
-      const downloadUri = `${FileSystem.documentDirectory}${fileName}`;
+      const downloadUri = `${documentDirectory}${fileName}`;
       await FileSystem.moveAsync({
         from: uri,
         to: downloadUri,
@@ -264,7 +264,7 @@ const ExportDataScreen = () => {
       const jsonData = JSON.stringify(data, null, 2);
       
       const fileName = `ecotrack-export-${new Date().toISOString().split('T')[0]}.json`;
-      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+      const fileUri = `${documentDirectory}${fileName}`;
       
       await FileSystem.writeAsStringAsync(fileUri, jsonData);
       

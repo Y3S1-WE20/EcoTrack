@@ -113,19 +113,28 @@ const ProfileScreen = () => {
               <Text style={styles.menuArrow}>→</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => router.push('/notifications')}
+            >
               <Text style={styles.menuIcon}>🔔</Text>
               <Text style={styles.menuText}>Notifications</Text>
               <Text style={styles.menuArrow}>→</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => router.push('/carbon-offset-program')}
+            >
               <Text style={styles.menuIcon}>🌍</Text>
               <Text style={styles.menuText}>Carbon Offset Programs</Text>
               <Text style={styles.menuArrow}>→</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => router.push('/learn-sustainability')}
+            >
               <Text style={styles.menuIcon}>📚</Text>
               <Text style={styles.menuText}>Learn About Sustainability</Text>
               <Text style={styles.menuArrow}>→</Text>

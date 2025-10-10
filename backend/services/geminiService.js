@@ -12,13 +12,40 @@ class GeminiService {
     this.model = null;
     this.isEnabled = false;
 
+    console.log('🔍 Gemini Service Debug:');
+    console.log('   API Key exists:', !!this.apiKey);
+    console.log('   API Key length:', this.apiKey ? this.apiKey.length : 0);
+    console.log('   API Key preview:', this.apiKey ? this.apiKey.substring(0, 10) + '...' : 'none');
+
     // Initialize Gemini if API key is available
     if (this.apiKey) {
       try {
         this.genAI = new GoogleGenerativeAI(this.apiKey);
-        this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-        this.isEnabled = true;
-        console.log('✅ Gemini AI service initialized');
+        
+        // Try different model names until one works
+        const modelNames = ['gemini-pro', 'gemini-1.5-pro-latest', 'gemini-1.0-pro-latest'];
+        let modelInitialized = false;
+        
+        for (const modelName of modelNames) {
+          try {
+            console.log(`🧪 Trying model: ${modelName}`);
+            this.model = this.genAI.getGenerativeModel({ model: modelName });
+            console.log(`✅ Successfully initialized model: ${modelName}`);
+            modelInitialized = true;
+            break;
+          } catch (modelError) {
+            console.log(`❌ Failed to initialize model ${modelName}:`, modelError.message);
+          }
+        }
+        
+        if (modelInitialized) {
+          this.isEnabled = true;
+          console.log('✅ Gemini AI service initialized');
+          console.log('   Model created:', !!this.model);
+          console.log('   Service enabled:', this.isEnabled);
+        } else {
+          throw new Error('No working Gemini model found');
+        }
       } catch (error) {
         console.error('❌ Failed to initialize Gemini AI:', error.message);
         this.isEnabled = false;

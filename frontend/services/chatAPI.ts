@@ -29,12 +29,37 @@ export interface ChatResponse {
 }
 
 class ChatAPI {
+  // Test connection to all URLs and return the first working one
+  async testConnection(): Promise<string | null> {
+    console.log('[ChatAPI] Testing connections...');
+    const urls = await apiConfig.getOrderedUrls();
+    
+    for (const url of urls) {
+      try {
+        const result = await this.tryRequest(url, '', { method: 'GET' });
+        if (result) {
+          console.log(`[ChatAPI] Found working connection: ${url}`);
+          await apiConfig.setWorkingUrl(url);
+          return url;
+        }
+      } catch (error) {
+        console.log(`[ChatAPI] Connection failed for ${url}:`, error);
+      }
+    }
+    
+    console.log('[ChatAPI] No working connections found');
+    return null;
+  }
+
   private async tryRequest(url: string, endpoint: string, options: RequestInit = {}): Promise<any> {
     console.log(`[ChatAPI] Trying: ${url}${endpoint}`);
     
-    // Add faster timeout for quicker fallback
+    // Add timeout with custom error message
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), apiConfig.getTimeout());
+    const timeoutId = setTimeout(() => {
+      console.log(`[ChatAPI] Request timeout for: ${url}${endpoint}`);
+      controller.abort();
+    }, apiConfig.getTimeout());
     
     try {
       const response = await fetch(`${url}${endpoint}`, {
@@ -50,12 +75,22 @@ class ChatAPI {
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({ message: 'Unknown error' }));
-        throw new Error(data.message || `HTTP ${response.status}`);
+        console.log(`[ChatAPI] HTTP Error ${response.status}:`, data);
+        throw new Error(data.message || `HTTP ${response.status}: ${response.statusText}`);
       }
 
-      return await response.json();
-    } catch (error) {
+      const result = await response.json();
+      console.log(`[ChatAPI] Success from: ${url}${endpoint}`);
+      return result;
+    } catch (error: any) {
       clearTimeout(timeoutId);
+      
+      if (error?.name === 'AbortError') {
+        console.log(`[ChatAPI] Connection timeout to: ${url}${endpoint}`);
+        throw new Error(`Connection timeout to ${url}`);
+      }
+      
+      console.log(`[ChatAPI] Request failed to ${url}${endpoint}:`, error?.message || error);
       throw error;
     }
   }
@@ -93,7 +128,12 @@ class ChatAPI {
       throw new Error('Cannot connect to server. Please ensure the backend is running and check your network connection.\n\nTroubleshooting:\n1. Make sure the backend server is running\n2. Try: adb reverse tcp:4000 tcp:4000\n3. Check your WiFi connection');
     }
     
-    throw lastError || new Error('All connection attempts failed');
+    throw new Error(`Cannot connect to server. Please ensure the backend is running and check your network connection.
+
+Troubleshooting:
+1. Make sure the backend server is running
+2. Try: adb reverse tcp:4000 tcp:4000
+3. Check your WiFi connection`);
   }
 
   async sendMessage(message: string, userToken?: string): Promise<ChatResponse> {

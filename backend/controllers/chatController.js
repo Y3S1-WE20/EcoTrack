@@ -1,9 +1,4 @@
-const nlpService = require('../services/nlpService');
-const co2Service = require('../services/co2Service');
 const geminiService = require('../services/geminiService');
-const badgeService = require('../services/badgeService');
-const HabitLog = require('../models/HabitLog');
-const Activity = require('../models/Activity');
 const { protect } = require('../middleware/auth');
 
 /**
@@ -30,14 +25,14 @@ const processMessage = async (req, res) => {
 
     console.log('Processing chat message:', message);
 
-    // First check if this is a general conversation or greeting
-    const isActivityMessage = nlpService.isActivityRelated(message);
-    
-    if (!isActivityMessage && geminiService.isAvailable()) {
+    // Use ONLY Gemini AI for all responses
+    if (geminiService.isAvailable()) {
       try {
-        console.log('Handling as general conversation with Gemini AI');
+        console.log('Handling with Gemini AI');
         const conversationResponse = await geminiService.handleConversation(message);
-        if (conversationResponse) {
+        console.log('Gemini response:', conversationResponse);
+        
+        if (conversationResponse && conversationResponse.response) {
           return res.json({
             success: true,
             message: conversationResponse.response,
@@ -51,176 +46,11 @@ const processMessage = async (req, res) => {
       }
     }
 
-    // Parse the message using NLP service for activity extraction
-    let parsed = nlpService.parseMessage(message);
-
-    // Enhance with Gemini AI if available
-    if (geminiService.isAvailable()) {
-      try {
-        const aiParsed = await geminiService.parseActivityWithAI(message, parsed);
-        if (aiParsed && aiParsed.aiEnhanced) {
-          parsed = aiParsed;
-          console.log('Enhanced with Gemini AI:', parsed);
-        }
-      } catch (aiError) {
-        console.error('Gemini AI parsing failed, using fallback:', aiError);
-      }
-    }
-
-    if (!parsed) {
-      // Try conversational response with Gemini AI
-      if (geminiService.isAvailable()) {
-        try {
-          const conversationResponse = await geminiService.handleConversation(message);
-          if (conversationResponse) {
-            return res.json({
-              success: true,
-              message: conversationResponse.response,
-              type: 'conversation',
-              aiEnhanced: true,
-              needsAuth: false
-            });
-          }
-        } catch (aiError) {
-          console.error('Gemini conversation failed:', aiError);
-        }
-      }
-
-      // Fallback to rule-based suggestions
-      const suggestions = nlpService.generateSuggestions(message);
-      
-      return res.json({
-        success: true,
-        message: "I didn't quite understand that activity. Could you be more specific?",
-        suggestions: suggestions[0],
-        parsed: null,
-        needsAuth: false
-      });
-    }
-
-    console.log('Parsed activity:', parsed);
-
-    // Calculate CO2 emissions
-    const co2Result = co2Service.calculateEmissions(
-      parsed.activityType,
-      parsed.activity,
-      parsed.amount,
-      parsed.unit
-    );
-
-    if (co2Result.error) {
-      return res.status(400).json({
-        success: false,
-        message: `Sorry, I couldn't calculate emissions for that activity: ${co2Result.error}`
-      });
-    }
-
-    // Generate personalized suggestion
-    let suggestion = co2Service.generateSuggestion(
-      parsed.activityType,
-      parsed.activity,
-      parsed.amount,
-      co2Result,
-      req.user || null
-    );
-
-    // Enhance suggestion with Gemini AI if available
-    if (geminiService.isAvailable() && req.user) {
-      try {
-        const aiSuggestion = await geminiService.generateSuggestion(
-          parsed.activityType,
-          parsed.activity,
-          parsed.amount,
-          parsed.unit,
-          co2Result.absoluteEmissions,
-          co2Result.impactCategory,
-          req.user.profile || null
-        );
-        
-        if (aiSuggestion && aiSuggestion.text) {
-          suggestion = aiSuggestion.text;
-        }
-      } catch (aiError) {
-        console.error('Gemini suggestion generation failed:', aiError);
-      }
-    }
-
-    let habitLogId = null;
-    let responseMessage = `Got it! ${co2Result.formattedEmission}`;
-
-    // If user is authenticated, save to database
-    if (req.user) {
-      try {
-        // Find or create activity
-        let activity = await Activity.findOne({ 
-          name: parsed.activity,
-          category: parsed.activityType 
-        });
-
-        if (!activity) {
-          activity = await Activity.create({
-            name: parsed.activity,
-            category: parsed.activityType,
-            unit: parsed.unit,
-            carbonFactor: co2Result.emissionFactor
-          });
-        }
-
-        // Create habit log
-        const habitLog = await HabitLog.create({
-          user: req.user.userId, // Fixed: use userId instead of _id
-          activity: activity._id,
-          quantity: parsed.amount,
-          unit: parsed.unit,
-          carbonEmitted: co2Result.isSavings ? 0 : co2Result.absoluteEmissions,
-          carbonSaved: co2Result.isSavings ? co2Result.absoluteEmissions : 0,
-          notes: `Logged via chat: "${message}"`,
-          parsedData: {
-            originalMessage: message,
-            confidence: parsed.confidence,
-            activityType: parsed.activityType
-          }
-        });
-
-        habitLogId = habitLog._id;
-        responseMessage += ' I\'ve saved this to your activity log!';
-        
-        console.log('Created habit log:', habitLogId);
-
-        // Check for badge achievements
-        const newBadges = await badgeService.checkBadges(req.user.userId, habitLog); // Fixed: use userId instead of _id
-        if (newBadges.length > 0) {
-          const badgeNames = newBadges.map(b => b.badge.name).join(', ');
-          responseMessage += ` 🏆 Congratulations! You earned: ${badgeNames}!`;
-        }
-
-      } catch (dbError) {
-        console.error('Database error:', dbError);
-        responseMessage += ' (Note: Could not save to your activity log due to a database error)';
-      }
-    } else {
-      responseMessage += ' Sign in to automatically track your activities!';
-    }
-
-    res.json({
-      success: true,
-      message: responseMessage,
-      parsed: {
-        activity: parsed.activity,
-        amount: parsed.amount,
-        unit: parsed.unit,
-        activityType: parsed.activityType
-      },
-      co2Data: {
-        activity: co2Result.formattedEmission,
-        amount: parsed.amount,
-        unit: parsed.unit,
-        co2Saved: co2Result.isSavings ? co2Result.absoluteEmissions : undefined,
-        co2Emitted: co2Result.isSavings ? undefined : co2Result.absoluteEmissions
-      },
-      suggestion,
-      habitLogId,
-      needsAuth: !req.user
+    // If Gemini is not available or failed, return fallback message
+    return res.status(503).json({
+      success: false,
+      message: 'AI service is currently unavailable. Please try again later.',
+      error: 'Gemini AI not available'
     });
 
   } catch (error) {

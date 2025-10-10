@@ -2,14 +2,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Define fallback URLs for different environments
 const API_URLS = [
-  'http://localhost:4000/api/v1',     // For adb reverse tunnel
+  'http://localhost:4000/api/v1',     // For adb reverse tunnel and web (PRIORITY)
+  'http://192.168.1.10:4000/api/v1', // Working local network IP
   'http://10.0.2.2:4000/api/v1',     // Android emulator
-  'http://192.168.1.10:4000/api/v1', // Local network IP
-  'http://192.168.56.1:4000/api/v1', // VirtualBox/VMware
+  'http://192.168.56.1:4000/api/v1', // VirtualBox/VMware  
+  'http://192.168.1.1:4000/api/v1',  // Common router IP
 ];
 
 const WORKING_URL_KEY = 'ecotrack_working_api_url';
-const URL_TEST_TIMEOUT = 3000; // 3 seconds timeout for faster detection
+const URL_TEST_TIMEOUT = 10000; // 10 seconds timeout for better connection
 
 class APIConfig {
   private workingUrl: string | null = null;

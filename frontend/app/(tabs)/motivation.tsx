@@ -1,252 +1,176 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
-  Dimensions,
-  Alert,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { profileAPI } from '../../services/profileAPI';
-import { Ionicons } from '@expo/vector-icons';
 
-const { width } = Dimensions.get('window');
+export default function MotivationScreen() {
+  const [activeTab, setActiveTab] = useState('tips');
+  const [refreshing, setRefreshing] = useState(false);
 
-interface Profile {
-  totalCo2Saved: number;
-  streakDays: number;
-  activitiesLogged: number;
-}
-
-interface Challenge {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  progress: number;
-  badge: string;
-  completed?: boolean;
-}
-
-interface Badge {
-  name: string;
-  icon?: string;
-  earnedAt: string;
-}
-
-export default function MotivationHubScreen() {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [currentChallenge, setCurrentChallenge] = useState<Challenge | null>(null);
-  const [badges, setBadges] = useState<Badge[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadProfileData();
-  }, []);
-
-  const loadProfileData = async () => {
-    try {
-      setLoading(true);
-      const response = await profileAPI.getProfile();
-      
-      if (response.success && response.data) {
-        setProfile(response.data.profile);
-        setCurrentChallenge(response.data.currentChallenge);
-        setBadges(response.data.badges || []);
-      }
-    } catch (error) {
-      console.error('Failed to load profile data:', error);
-      Alert.alert('Error', 'Failed to load your profile data');
-    } finally {
-      setLoading(false);
-    }
+  const onRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 1000);
   };
-
-  const updateChallengeProgress = async (progressIncrease: number) => {
-    try {
-      if (!currentChallenge) return;
-      
-      const newProgress = Math.min(currentChallenge.progress + progressIncrease, 100);
-      const completed = newProgress >= 100;
-      
-      const response = await profileAPI.updateChallengeProgress(newProgress, completed);
-      
-      if (response.success) {
-        setCurrentChallenge({
-          ...currentChallenge,
-          progress: newProgress,
-          completed: completed
-        });
-        
-        if (completed) {
-          Alert.alert(
-            '🎉 Challenge Completed!',
-            `Congratulations! You've completed the "${currentChallenge.title}" challenge!`,
-            [{ text: 'Awesome!', style: 'default' }]
-          );
-        }
-      }
-    } catch (error) {
-      console.error('Failed to update challenge progress:', error);
-    }
-  };
-
-  const renderChallengeCard = () => {
-    if (!currentChallenge) {
-      return (
-        <View style={styles.challengeCard}>
-          <Text style={styles.challengeTitle}>No Active Challenge</Text>
-          <Text style={styles.challengeDescription}>
-            Complete your onboarding to get your first challenge!
-          </Text>
-        </View>
-      );
-    }
-
-    const progressPercentage = (currentChallenge.progress / 100) * 100;
-    
-    return (
-      <View style={styles.challengeCard}>
-        <View style={styles.challengeHeader}>
-          <Text style={styles.challengeTitle}>{currentChallenge.title}</Text>
-          <Text style={styles.challengeCategory}>{currentChallenge.category}</Text>
-        </View>
-        
-        <Text style={styles.challengeDescription}>
-          {currentChallenge.description}
-        </Text>
-        
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <View 
-              style={[styles.progressFill, { width: `${progressPercentage}%` }]} 
-            />
-          </View>
-          <Text style={styles.progressText}>{currentChallenge.progress}%</Text>
-        </View>
-        
-        <View style={styles.challengeActions}>
-          <TouchableOpacity
-            style={styles.progressButton}
-            onPress={() => updateChallengeProgress(25)}
-          >
-            <Text style={styles.progressButtonText}>Log Progress (+25%)</Text>
-          </TouchableOpacity>
-        </View>
-        
-        <Text style={styles.challengeReward}>
-          🏆 Reward: {currentChallenge.badge} badge
-        </Text>
-      </View>
-    );
-  };
-
-  const renderBadgeGrid = () => {
-    if (badges.length === 0) {
-      return (
-        <View style={styles.emptyBadges}>
-          <Ionicons name="medal-outline" size={48} color="#ccc" />
-          <Text style={styles.emptyBadgesText}>
-            No badges earned yet. Complete challenges to earn your first badge!
-          </Text>
-        </View>
-      );
-    }
-
-    return (
-      <View style={styles.badgeGrid}>
-        {badges.map((badge, index) => (
-          <View key={index} style={styles.badgeItem}>
-            <View style={styles.badgeIcon}>
-              <Text style={styles.badgeEmoji}>{badge.icon || '🏆'}</Text>
-            </View>
-            <Text style={styles.badgeName}>{badge.name}</Text>
-            <Text style={styles.badgeDate}>
-              {new Date(badge.earnedAt).toLocaleDateString()}
-            </Text>
-          </View>
-        ))}
-      </View>
-    );
-  };
-
-  const renderStatsOverview = () => {
-    if (!profile) return null;
-
-    return (
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Ionicons name="leaf-outline" size={24} color="#4CAF50" />
-          <Text style={styles.statValue}>{profile.totalCo2Saved || 0} kg</Text>
-          <Text style={styles.statLabel}>CO₂ Saved</Text>
-        </View>
-        
-        <View style={styles.statCard}>
-          <Ionicons name="flame-outline" size={24} color="#FF5722" />
-          <Text style={styles.statValue}>{profile.streakDays || 0}</Text>
-          <Text style={styles.statLabel}>Day Streak</Text>
-        </View>
-        
-        <View style={styles.statCard}>
-          <Ionicons name="checkmark-circle-outline" size={24} color="#2196F3" />
-          <Text style={styles.statValue}>{profile.activitiesLogged || 0}</Text>
-          <Text style={styles.statLabel}>Activities</Text>
-        </View>
-      </View>
-    );
-  };
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading your motivation hub...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>🌟 Motivation Hub</Text>
-          <Text style={styles.subtitle}>
-            Stay motivated on your eco-journey!
-          </Text>
-        </View>
+      <View style={styles.header}>
+        <Text style={styles.title}>Motivation Hub ⭐</Text>
+        <Text style={styles.subtitle}>Welcome back, Eco Warrior!</Text>
+      </View>
 
-        {/* Stats Overview */}
-        {renderStatsOverview()}
-
-        {/* Current Challenge */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🎯 Current Challenge</Text>
-          {renderChallengeCard()}
-        </View>
-
-        {/* Badges */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🏆 Your Badges</Text>
-          {renderBadgeGrid()}
-        </View>
-
-        {/* Motivational Tips */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>💡 Daily Tip</Text>
-          <View style={styles.tipCard}>
-            <Text style={styles.tipText}>
-              Small changes make a big difference! Every eco-friendly action counts towards a sustainable future.
+      <View style={styles.tabBar}>
+        {[
+          { key: 'tips', label: 'AI Tips', icon: '🤖' },
+          { key: 'challenges', label: 'Challenges', icon: '🎯' },
+          { key: 'articles', label: 'Articles', icon: '📚' },
+          { key: 'community', label: 'Community', icon: '👥' },
+        ].map((tab) => (
+          <TouchableOpacity
+            key={tab.key}
+            style={[styles.tabItem, activeTab === tab.key && styles.activeTab]}
+            onPress={() => setActiveTab(tab.key)}
+          >
+            <Text style={styles.tabIcon}>{tab.icon}</Text>
+            <Text style={[styles.tabLabel, activeTab === tab.key && styles.activeTabLabel]}>
+              {tab.label}
             </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <ScrollView
+        style={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        {activeTab === 'tips' && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>🤖 AI-Powered Suggestions</Text>
+            <Text style={styles.sectionSubtitle}>
+              Personalized tips based on your activity patterns
+            </Text>
+
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardIcon}>🌡️</Text>
+                <View style={styles.cardInfo}>
+                  <Text style={styles.cardTitle}>Smart Thermostat Settings</Text>
+                  <Text style={styles.impactText}>Save 450kg CO₂/year</Text>
+                </View>
+              </View>
+              <Text style={styles.cardDescription}>
+                Set your thermostat 2-3°C lower in winter and higher in summer.
+                This simple change can reduce your energy consumption by 10-15%.
+              </Text>
+              <TouchableOpacity style={styles.actionButton}>
+                <Text style={styles.actionButtonText}>Try This Tip</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardIcon}>🚌</Text>
+                <View style={styles.cardInfo}>
+                  <Text style={styles.cardTitle}>Public Transport Challenge</Text>
+                  <Text style={styles.impactText}>Save 6.8kg CO₂/week</Text>
+                </View>
+              </View>
+              <Text style={styles.cardDescription}>
+                Try using public transport 3 times this week instead of driving.
+                You will reduce emissions and might discover new places!
+              </Text>
+              <TouchableOpacity style={styles.actionButton}>
+                <Text style={styles.actionButtonText}>Try This Tip</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        )}
+
+        {activeTab === 'challenges' && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>🎯 Smart Challenges</Text>
+            <Text style={styles.sectionSubtitle}>
+              AI-adapted challenges based on your progress
+            </Text>
+
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardIcon}>👟</Text>
+                <View style={styles.cardInfo}>
+                  <Text style={styles.cardTitle}>Daily Walking Goal</Text>
+                  <Text style={styles.progressText}>3/7 days completed</Text>
+                </View>
+              </View>
+              <Text style={styles.cardDescription}>
+                Walk at least 8,000 steps per day for the next 7 days
+              </Text>
+              <View style={styles.progressBar}>
+                <View style={[styles.progressFill, { width: '43%' }]} />
+              </View>
+              <TouchableOpacity style={styles.actionButton}>
+                <Text style={styles.actionButtonText}>Join Challenge</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {activeTab === 'articles' && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>📚 Featured Articles</Text>
+            <Text style={styles.sectionSubtitle}>
+              Latest insights from sustainability experts
+            </Text>
+
+            <TouchableOpacity style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardIcon}>🔬</Text>
+                <View style={styles.cardInfo}>
+                  <Text style={styles.cardTitle}>The Science Behind Carbon Offsetting</Text>
+                  <Text style={styles.metaText}>Dr. Sarah Climate • 5 min read</Text>
+                </View>
+              </View>
+              <Text style={styles.cardDescription}>
+                Understanding how carbon offset programs work and their real-world
+                impact on climate change.
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {activeTab === 'community' && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>👥 Community Highlights</Text>
+            <Text style={styles.sectionSubtitle}>
+              Celebrating real impact from our community
+            </Text>
+
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardIcon}>🚴‍♂️</Text>
+                <View style={styles.cardInfo}>
+                  <Text style={styles.cardTitle}>Alex Green</Text>
+                  <Text style={styles.metaText}>San Francisco, CA • 2 days ago</Text>
+                </View>
+              </View>
+              <Text style={styles.cardDescription}>
+                Completed 30-day bike commute challenge
+              </Text>
+              <View style={styles.impactBadge}>
+                <Text style={styles.impactBadgeText}>Saved 45kg CO₂</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity style={styles.shareButton}>
+              <Text style={styles.shareButtonText}>Share Your Achievement</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -255,230 +179,167 @@ export default function MotivationHubScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#666',
+    backgroundColor: '#F5F5F5',
   },
   header: {
-    padding: 20,
-    backgroundColor: '#2e7d32',
-    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 8,
+    color: '#212121',
+    marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: '#c8e6c9',
-    textAlign: 'center',
+    color: '#666',
   },
-  statsContainer: {
+  tabBar: {
     flexDirection: 'row',
-    padding: 20,
-    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 5,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
   },
-  statCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
+  tabItem: {
     flex: 1,
-    marginHorizontal: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginHorizontal: 5,
   },
-  statValue: {
+  activeTab: {
+    backgroundColor: '#E8F5E8',
+  },
+  tabIcon: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 8,
+    marginBottom: 4,
   },
-  statLabel: {
+  tabLabel: {
     fontSize: 12,
     color: '#666',
-    marginTop: 4,
+    fontWeight: '500',
+  },
+  activeTabLabel: {
+    color: '#4CAF50',
+    fontWeight: 'bold',
+  },
+  content: {
+    flex: 1,
+    padding: 20,
   },
   section: {
-    padding: 20,
+    marginBottom: 32,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#212121',
+    marginBottom: 8,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: '#666',
     marginBottom: 16,
   },
-  challengeCard: {
-    backgroundColor: '#fff',
+  card: {
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  challengeHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  challengeTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    flex: 1,
-  },
-  challengeCategory: {
-    fontSize: 12,
-    color: '#4CAF50',
-    backgroundColor: '#e8f5e8',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    textTransform: 'uppercase',
-  },
-  challengeDescription: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
     marginBottom: 16,
-  },
-  progressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  progressBar: {
-    flex: 1,
-    height: 8,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 4,
-    marginRight: 12,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#4CAF50',
-    borderRadius: 4,
-  },
-  progressText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-  },
-  challengeActions: {
-    marginBottom: 12,
-  },
-  progressButton: {
-    backgroundColor: '#4CAF50',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-  },
-  progressButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  challengeReward: {
-    fontSize: 12,
-    color: '#666',
-    fontStyle: 'italic',
-    textAlign: 'center',
-  },
-  badgeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  badgeItem: {
-    width: (width - 60) / 3,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    marginBottom: 16,
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
   },
-  badgeIcon: {
-    width: 48,
-    height: 48,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
   },
-  badgeEmoji: {
-    fontSize: 24,
+  cardIcon: {
+    fontSize: 32,
+    marginRight: 16,
   },
-  badgeName: {
-    fontSize: 12,
+  cardInfo: {
+    flex: 1,
+  },
+  cardTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
+    color: '#212121',
     marginBottom: 4,
   },
-  badgeDate: {
-    fontSize: 10,
+  cardDescription: {
+    fontSize: 16,
     color: '#666',
-    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 16,
   },
-  emptyBadges: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 40,
+  impactText: {
+    fontSize: 14,
+    color: '#4CAF50',
+    fontWeight: '600',
+  },
+  progressText: {
+    fontSize: 14,
+    color: '#4CAF50',
+    fontWeight: '500',
+  },
+  metaText: {
+    fontSize: 12,
+    color: '#999',
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#4CAF50',
+  },
+  actionButton: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 8,
+    paddingVertical: 12,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
   },
-  emptyBadgesText: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 16,
-    lineHeight: 20,
+  actionButtonText: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
-  tipCard: {
-    backgroundColor: '#fff',
+  impactBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#E8F5E8',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 16,
-    padding: 20,
-    borderLeftWidth: 4,
-    borderLeftColor: '#4CAF50',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
   },
-  tipText: {
+  impactBadgeText: {
     fontSize: 14,
-    color: '#333',
-    lineHeight: 20,
-    fontStyle: 'italic',
+    color: '#4CAF50',
+    fontWeight: '600',
+  },
+  shareButton: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  shareButtonText: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
 });

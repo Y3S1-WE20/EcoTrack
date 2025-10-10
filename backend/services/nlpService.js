@@ -323,11 +323,13 @@ class NLPService {
     
     // Common greetings and conversational starters should NOT be treated as activity-related
     const conversationalPatterns = [
-      /^(hi|hello|hey|good morning|good afternoon|good evening|howdy)$/i,
-      /^(how are you|how's it going|what's up|whats up)$/i,
-      /^(thanks|thank you|bye|goodbye|see you)$/i,
-      /^(help|what can you do|what do you do)$/i,
-      /^(yes|no|ok|okay|sure|maybe|i don't know)$/i
+      /^(hi|hello|hey|good morning|good afternoon|good evening|howdy)/i,
+      /^(how are you|how's it going|what's up|whats up)/i,
+      /^(thanks|thank you|bye|goodbye|see you)/i,
+      /^(help|what can you do|what do you do)/i,
+      /^(yes|no|ok|okay|sure|maybe|i don't know)/i,
+      /(who are you|what are you|tell me about yourself)/i,
+      /(introduce yourself|what is your name)/i
     ];
 
     // If it matches conversational patterns, it's NOT activity-related
