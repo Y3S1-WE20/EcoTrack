@@ -13,12 +13,21 @@ export default function TabLayout() {
   return (
     <Tabs
       tabBar={(props) => <CustomTabBar {...props} />}
-      initialRouteName="assistant"
+      initialRouteName="habits"
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
         tabBarButton: HapticTab,
       }}>
+      
+      {/* Home/Habits page should be first */}
+      <Tabs.Screen
+        name="habits"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+        }}
+      />
       
       {/* Phase 2: Carbon Footprint Chatbot */}
       <Tabs.Screen
@@ -29,12 +38,21 @@ export default function TabLayout() {
         }}
       />
       
-      {/* Phase 4: Motivation Hub */}
+      {/* Goals page */}
       <Tabs.Screen
-        name="motivation"
+        name="goals"
         options={{
-          title: 'Motivation',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="star.fill" color={color} />,
+          title: 'Goals',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="target" color={color} />,
+        }}
+      />
+      
+      {/* Explore page */}
+      <Tabs.Screen
+        name="explore"
+        options={{
+          title: 'Explore',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
         }}
       />
       
@@ -47,27 +65,17 @@ export default function TabLayout() {
         }}
       />
       
-      {/* Hidden tabs - to be handled by colleague */}
+      {/* Phase 4: Motivation Hub - accessible from Profile */}
       <Tabs.Screen
-        name="habits"
+        name="motivation"
         options={{
-          href: null, // Hide - Phase 1: Daily Habit Tracking (colleague's task)
+          href: null, // Hide from tabs - will be accessed from Profile page
         }}
       />
-      <Tabs.Screen
-        name="goals"
-        options={{
-          href: null, // Hide - Phase 3: Personal Accountability (colleague's task)
-        }}
-      />
+      
+      {/* Hide default index */}
       <Tabs.Screen
         name="index"
-        options={{
-          href: null, // Hide this tab
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
         options={{
           href: null, // Hide this tab
         }}

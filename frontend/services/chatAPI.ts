@@ -97,7 +97,9 @@ class ChatAPI {
   }
 
   async sendMessage(message: string, userToken?: string): Promise<ChatResponse> {
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
     if (userToken) {
       headers.Authorization = `Bearer ${userToken}`;
     }

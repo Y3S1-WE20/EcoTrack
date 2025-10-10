@@ -2,9 +2,11 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'expo-router';
 
 const ProfileScreen = () => {
   const { user, signOut, isAuthenticated } = useAuth();
+  const router = useRouter();
 
   const handleLogout = () => {
     Alert.alert(
@@ -80,15 +82,30 @@ const ProfileScreen = () => {
 
           {/* Menu Items */}
           <View style={styles.menuSection}>
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => router.push('/carbon-report')}
+            >
               <Text style={styles.menuIcon}>📊</Text>
               <Text style={styles.menuText}>Carbon Footprint Report</Text>
               <Text style={styles.menuArrow}>→</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => router.push('/personal-goals')}
+            >
               <Text style={styles.menuIcon}>🎯</Text>
               <Text style={styles.menuText}>Personal Goals</Text>
+              <Text style={styles.menuArrow}>→</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => router.push('/motivation')}
+            >
+              <Text style={styles.menuIcon}>⭐</Text>
+              <Text style={styles.menuText}>Motivation Hub</Text>
               <Text style={styles.menuArrow}>→</Text>
             </TouchableOpacity>
 
@@ -110,7 +127,10 @@ const ProfileScreen = () => {
               <Text style={styles.menuArrow}>→</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => router.push('/settings')}
+            >
               <Text style={styles.menuIcon}>⚙️</Text>
               <Text style={styles.menuText}>Settings</Text>
               <Text style={styles.menuArrow}>→</Text>
