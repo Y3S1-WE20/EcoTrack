@@ -13,38 +13,51 @@ export default function TabLayout() {
   return (
     <Tabs
       tabBar={(props) => <CustomTabBar {...props} />}
-      initialRouteName="habits"
+      initialRouteName="assistant"
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
         tabBarButton: HapticTab,
       }}>
-      <Tabs.Screen
-        name="habits"
-        options={{
-          title: 'Habits',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
-      />
+      
+      {/* Phase 2: Carbon Footprint Chatbot */}
       <Tabs.Screen
         name="assistant"
         options={{
-          title: 'Assistant',
+          title: 'AI Assistant',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="message.fill" color={color} />,
         }}
       />
+      
+      {/* Phase 4: Motivation Hub */}
       <Tabs.Screen
-        name="goals"
+        name="motivation"
         options={{
-          title: 'Goals',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chart.bar.fill" color={color} />,
+          title: 'Motivation',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="star.fill" color={color} />,
         }}
       />
+      
+      {/* Profile for onboarding */}
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+        }}
+      />
+      
+      {/* Hidden tabs - to be handled by colleague */}
+      <Tabs.Screen
+        name="habits"
+        options={{
+          href: null, // Hide - Phase 1: Daily Habit Tracking (colleague's task)
+        }}
+      />
+      <Tabs.Screen
+        name="goals"
+        options={{
+          href: null, // Hide - Phase 3: Personal Accountability (colleague's task)
         }}
       />
       <Tabs.Screen

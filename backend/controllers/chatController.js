@@ -21,6 +21,7 @@ const processMessage = async (req, res) => {
     const { message } = req.body;
 
     if (!message || typeof message !== 'string') {
+      console.log('Invalid message:', { message, type: typeof message, body: req.body });
       return res.status(400).json({
         success: false,
         message: 'Please provide a valid message'
