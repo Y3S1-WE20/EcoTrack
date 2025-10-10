@@ -1,35 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
+import { apiConfig } from './apiConfig';
 
 /**
- * Determine API base URL with fallbacks for better mobile connectivity
+ * Authentication service with intelligent URL fallback and caching
  */
-const getBaseURL = () => {
-  // Web (local development)
-  if (Platform.OS === 'web') {
-    return 'http://localhost:4000/api/v1';
-  }
 
-  // For mobile devices, we'll use a fallback system in the request method
-  const fallbackUrls = [
-    'http://localhost:4000/api/v1',        // ADB reverse
-    'http://10.0.2.2:4000/api/v1',        // Android emulator
-    'http://192.168.1.10:4000/api/v1',    // Local network IP
-    'http://192.168.56.1:4000/api/v1'     // VirtualBox/VMware IP
-  ];
-
-  console.log('[AuthAPI] Will try URLs in order:', fallbackUrls);
-  return fallbackUrls[0]; // Start with localhost
-};
-
-const API_BASE_URL = getBaseURL();
-const FALLBACK_URLS = [
-  'http://localhost:4000/api/v1',
-  'http://10.0.2.2:4000/api/v1',
-  'http://192.168.1.10:4000/api/v1',
-  'http://192.168.56.1:4000/api/v1'
-];
 const TOKEN_KEY = 'ecotrack_auth_token';
 const USER_KEY = 'ecotrack_user_data';
 
@@ -89,30 +65,41 @@ class AuthService {
 
     console.log(`[AuthAPI] Trying: ${url}${endpoint}`);
     
-    const response = await fetch(`${url}${endpoint}`, {
-      ...options,
-      headers,
-    });
+    // Add faster timeout for quicker fallback
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), apiConfig.getTimeout());
+    
+    try {
+      const response = await fetch(`${url}${endpoint}`, {
+        ...options,
+        headers,
+        signal: controller.signal,
+      });
 
-    const data = await response.json();
+      clearTimeout(timeoutId);
+      const data = await response.json();
 
-    // If server indicates unauthorized, clear local credentials so user is forced to re-authenticate
-    if (response.status === 401) {
-      console.warn('[AuthAPI] Received 401 Unauthorized - clearing stored token and user data');
-      try {
-        await this.removeToken();
-        await this.removeUser();
-      } catch (clearErr) {
-        console.error('[AuthAPI] Error clearing credentials after 401:', clearErr);
+      // If server indicates unauthorized, clear local credentials so user is forced to re-authenticate
+      if (response.status === 401) {
+        console.warn('[AuthAPI] Received 401 Unauthorized - clearing stored token and user data');
+        try {
+          await this.removeToken();
+          await this.removeUser();
+        } catch (clearErr) {
+          console.error('[AuthAPI] Error clearing credentials after 401:', clearErr);
+        }
+        throw new Error(data.error || 'Unauthorized');
       }
-      throw new Error(data.error || 'Unauthorized');
-    }
 
-    if (!response.ok) {
-      throw new Error(data.error || `HTTP error! status: ${response.status}`);
-    }
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+      }
 
-    return data;
+      return data;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      throw error;
+    }
   }
 
   private async request<T>(
@@ -126,11 +113,18 @@ class AuthService {
       return this.tryRequest('http://localhost:4000/api/v1', endpoint, options);
     }
 
-    // On mobile, try each URL until one works
-    for (const baseUrl of FALLBACK_URLS) {
+    // On mobile, try URLs in smart order (cached working URL first)
+    const orderedUrls = await apiConfig.getOrderedUrls();
+    console.log('[AuthAPI] Will try URLs in order:', orderedUrls);
+    
+    for (const baseUrl of orderedUrls) {
       try {
         const result = await this.tryRequest<T>(baseUrl, endpoint, options);
         console.log(`[AuthAPI] Success with: ${baseUrl}`);
+        
+        // Cache this working URL for faster future requests
+        await apiConfig.setWorkingUrl(baseUrl);
+        
         return result;
       } catch (error) {
         console.log(`[AuthAPI] Failed with ${baseUrl}:`, error);

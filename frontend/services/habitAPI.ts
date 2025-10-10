@@ -2,16 +2,9 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { authService } from './authAPI';
+import { apiConfig } from './apiConfig';
 
-// Define fallback URLs for different environments
-const API_URLS = [
-  'http://localhost:4000/api/v1',     // For adb reverse tunnel
-  'http://10.0.2.2:4000/api/v1',     // Android emulator
-  'http://192.168.1.10:4000/api/v1', // Local network IP
-  'http://192.168.56.1:4000/api/v1', // VirtualBox/VMware
-];
-
-console.log('[HabitAPI] Will try URLs in order:', API_URLS);
+console.log('[HabitAPI] Initializing with smart URL fallback');
 
 export interface Category {
   _id: string;
@@ -86,18 +79,37 @@ class HabitAPI {
       headers,
     };
 
-    for (const baseUrl of API_URLS) {
+    // Get URLs in smart order (cached working URL first)
+    const orderedUrls = await apiConfig.getOrderedUrls();
+
+    for (const baseUrl of orderedUrls) {
       try {
         const url = `${baseUrl}${endpoint}`;
         console.log(`[HabitAPI] Trying: ${url}`);
         
-        const response = await fetch(url, requestOptions);
+        // Add faster timeout for quicker fallback
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), apiConfig.getTimeout());
         
-        if (response.ok) {
-          console.log(`[HabitAPI] Success with: ${baseUrl}`);
-          return response;
-        } else {
-          console.log(`[HabitAPI] Failed with ${baseUrl}: HTTP ${response.status}`);
+        try {
+          const response = await fetch(url, {
+            ...requestOptions,
+            signal: controller.signal,
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (response.ok) {
+            console.log(`[HabitAPI] Success with: ${baseUrl}`);
+            // Cache this working URL for faster future requests
+            await apiConfig.setWorkingUrl(baseUrl);
+            return response;
+          } else {
+            console.log(`[HabitAPI] Failed with ${baseUrl}: HTTP ${response.status}`);
+          }
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          throw fetchError;
         }
       } catch (error) {
         console.log(`[HabitAPI] Failed with ${baseUrl}:`, error);

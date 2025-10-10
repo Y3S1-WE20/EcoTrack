@@ -1,15 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import { apiConfig } from './apiConfig';
 
-// Define fallback URLs for different environments
-const API_URLS = [
-  'http://localhost:4000/api/v1',     // For adb reverse tunnel
-  'http://10.0.2.2:4000/api/v1',     // Android emulator
-  'http://192.168.1.10:4000/api/v1', // Local network IP
-  'http://192.168.56.1:4000/api/v1', // VirtualBox/VMware
-];
-
-console.log('[ProfileAPI] Will try URLs in order:', API_URLS);
+console.log('[ProfileAPI] Initializing with smart URL fallback');
 
 // Helper function to try multiple URLs until one works
 const tryRequest = async (endpoint: string, options: RequestInit = {}) => {
@@ -26,20 +19,39 @@ const tryRequest = async (endpoint: string, options: RequestInit = {}) => {
     headers,
   };
 
-  for (const baseUrl of API_URLS) {
+  // Get URLs in smart order (cached working URL first)
+  const orderedUrls = await apiConfig.getOrderedUrls();
+
+  for (const baseUrl of orderedUrls) {
     try {
       const url = `${baseUrl}${endpoint}`;
       console.log(`[ProfileAPI] Trying: ${url}`);
       
-      const response = await fetch(url, requestOptions);
-      const data = await response.json();
+      // Add faster timeout for quicker fallback
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), apiConfig.getTimeout());
+      
+      try {
+        const response = await fetch(url, {
+          ...requestOptions,
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
+        const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+        if (!response.ok) {
+          throw new Error(data.message || `HTTP error! status: ${response.status}`);
+        }
+
+        console.log(`[ProfileAPI] Success with: ${baseUrl}`);
+        // Cache this working URL for faster future requests
+        await apiConfig.setWorkingUrl(baseUrl);
+        return data;
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        throw fetchError;
       }
-
-      console.log(`[ProfileAPI] Success with: ${baseUrl}`);
-      return data;
     } catch (error) {
       console.log(`[ProfileAPI] Failed with ${baseUrl}:`, error);
       // Continue to next URL
