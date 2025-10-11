@@ -10,7 +10,6 @@ import AITips from '../../components/AITips';
 import Articles from '../../components/Articles';
 import Community from '../../components/Community';
 import Challenges from '../../components/Challenges';
-import MotivationTest from '../../components/MotivationTest';
 
 export default function MotivationScreen() {
   const [activeTab, setActiveTab] = useState('tips');
@@ -25,7 +24,7 @@ export default function MotivationScreen() {
     console.log('[Motivation] Rendering content for tab:', activeTab);
     switch (activeTab) {
       case 'tips':
-        return <MotivationTest />; // Temporarily use test component
+        return <AITips onRefresh={onRefresh} refreshing={refreshing} />;
       case 'challenges':
         return <Challenges onRefresh={onRefresh} refreshing={refreshing} />;
       case 'articles':
@@ -33,7 +32,7 @@ export default function MotivationScreen() {
       case 'community':
         return <Community onRefresh={onRefresh} refreshing={refreshing} />;
       default:
-        return <MotivationTest />; // Temporarily use test component
+        return <AITips onRefresh={onRefresh} refreshing={refreshing} />;
     }
   };
 

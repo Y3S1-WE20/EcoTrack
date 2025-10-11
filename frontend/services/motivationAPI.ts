@@ -83,16 +83,17 @@ export const createCommunityPost = async (postData: {
   });
 };
 
-export const likeCommunityPost = async (postId: string) => {
+export const likeCommunityPost = async (postId: string, userId: string) => {
   return apiRequest(`/community/posts/${postId}/like`, {
     method: 'POST',
+    body: JSON.stringify({ userId }),
   });
 };
 
-export const addComment = async (postId: string, content: string) => {
+export const addComment = async (postId: string, content: string, author: string) => {
   return apiRequest(`/community/posts/${postId}/comment`, {
     method: 'POST',
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ content, author }),
   });
 };
 

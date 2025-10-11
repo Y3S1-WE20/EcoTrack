@@ -82,13 +82,14 @@ const getCommunityPosts = async (req, res) => {
 
 const createCommunityPost = async (req, res) => {
   try {
-    const { content, achievement, impactData } = req.body;
+    const { content, achievement, impactData, author } = req.body;
     
-    // For now, use a demo user. In production, get from auth middleware
-    const demoUser = 'Demo User';
+    // Use provided author or fallback to demo user
+    const postAuthor = author || 'Demo User';
+    console.log('Creating post with author:', postAuthor);
     
     const newPost = new CommunityPost({
-      author: demoUser,
+      author: postAuthor,
       content,
       achievement,
       impactData,
@@ -115,7 +116,14 @@ const createCommunityPost = async (req, res) => {
 const likeCommunityPost = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = 'demo-user'; // In production, get from auth middleware
+    const { userId } = req.body; // Get user ID from request body
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID is required'
+      });
+    }
 
     const post = await CommunityPost.findById(id);
     if (!post) {
@@ -154,8 +162,14 @@ const likeCommunityPost = async (req, res) => {
 const addComment = async (req, res) => {
   try {
     const { id } = req.params;
-    const { content } = req.body;
-    const userId = 'demo-user'; // In production, get from auth middleware
+    const { content, author } = req.body;
+    
+    if (!content || !author) {
+      return res.status(400).json({
+        success: false,
+        message: 'Content and author are required'
+      });
+    }
 
     const post = await CommunityPost.findById(id);
     if (!post) {
@@ -166,7 +180,7 @@ const addComment = async (req, res) => {
     }
 
     const newComment = {
-      author: userId,
+      author: author,
       content,
       createdAt: new Date()
     };

@@ -18,6 +18,7 @@ import {
   addComment,
   CommunityPost,
 } from '../services/motivationAPI';
+import { authService } from '../services/authAPI';
 
 interface CommunityProps {
   onRefresh?: () => void;
@@ -33,10 +34,36 @@ export default function Community({ onRefresh, refreshing = false }: CommunityPr
   const [creating, setCreating] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUserId, setCurrentUserId] = useState<string>('demo-user');
 
   useEffect(() => {
+    loadCurrentUser();
     loadPosts();
   }, []);
+
+  const loadCurrentUser = async () => {
+    try {
+      const user = await authService.getUser();
+      if (user) {
+        setCurrentUser(user);
+        setCurrentUserId(user._id || 'demo-user');
+        console.log('[Community] Current user loaded:', user.name);
+      } else {
+        // If no user in storage, try to get from API
+        const response = await authService.getCurrentUser();
+        if (response.success && response.data) {
+          setCurrentUser(response.data.user);
+          setCurrentUserId(response.data.user._id || 'demo-user');
+          console.log('[Community] Current user from API:', response.data.user.name);
+        } else {
+          console.log('[Community] No authenticated user found, using demo user');
+        }
+      }
+    } catch (error) {
+      console.error('[Community] Error loading current user:', error);
+    }
+  };
 
   const loadPosts = async (pageNum = 1, reset = true) => {
     try {
@@ -85,13 +112,19 @@ export default function Community({ onRefresh, refreshing = false }: CommunityPr
 
     try {
       setCreating(true);
+      
+      // Use actual user name or fallback to Demo User
+      const authorName = currentUser?.name || 'Demo User';
+      console.log('[Community] Creating post with author:', authorName);
+      
       const postData = {
         content: newPostContent.trim(),
         achievement: newPostAchievement.trim() || undefined,
         impactData: {
           co2Saved: Math.floor(Math.random() * 50),
           unit: 'kg'
-        }
+        },
+        author: authorName // Send the actual user name
       };
 
       const response = await createCommunityPost(postData);
@@ -112,7 +145,7 @@ export default function Community({ onRefresh, refreshing = false }: CommunityPr
 
   const handleLikePost = async (postId: string) => {
     try {
-      const response = await likeCommunityPost(postId);
+      const response = await likeCommunityPost(postId, currentUserId);
       if (response.success) {
         setPosts(prev =>
           prev.map(post =>
@@ -120,8 +153,8 @@ export default function Community({ onRefresh, refreshing = false }: CommunityPr
               ? {
                   ...post,
                   likes: response.hasLiked
-                    ? [...post.likes, 'demo-user']
-                    : post.likes.filter(id => id !== 'demo-user')
+                    ? [...post.likes, currentUserId]
+                    : post.likes.filter(id => id !== currentUserId)
                 }
               : post
           )
@@ -234,7 +267,7 @@ export default function Community({ onRefresh, refreshing = false }: CommunityPr
                       onPress={() => handleLikePost(post._id)}
                     >
                       <Text style={styles.actionIcon}>
-                        {post.likes.includes('demo-user') ? '❤️' : '🤍'}
+                        {post.likes.includes(currentUserId) ? '❤️' : '🤍'}
                       </Text>
                       <Text style={styles.actionText}>{post.likes.length}</Text>
                     </TouchableOpacity>
