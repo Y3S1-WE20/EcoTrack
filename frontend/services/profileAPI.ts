@@ -125,4 +125,28 @@ export const profileAPI = {
       throw error;
     }
   },
+
+  // Update user profile
+  updateProfile: async (profileData: {
+    name: string;
+    email?: string;
+    phone?: string;
+    bio?: string;
+    profileImage?: string | null;
+  }) => {
+    try {
+      console.log('Updating profile:', profileData);
+      
+      const response = await makeAuthenticatedRequest('/profile', {
+        method: 'PUT',
+        body: JSON.stringify(profileData),
+      });
+
+      console.log('Profile update response:', response);
+      return response;
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      throw error;
+    }
+  },
 };

@@ -3,11 +3,13 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
-  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AITips from '../../components/AITips';
+import Articles from '../../components/Articles';
+import Community from '../../components/Community';
+import Challenges from '../../components/Challenges';
 
 export default function MotivationScreen() {
   const [activeTab, setActiveTab] = useState('tips');
@@ -16,6 +18,22 @@ export default function MotivationScreen() {
   const onRefresh = () => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 1000);
+  };
+
+  const renderContent = () => {
+    console.log('[Motivation] Rendering content for tab:', activeTab);
+    switch (activeTab) {
+      case 'tips':
+        return <AITips onRefresh={onRefresh} refreshing={refreshing} />;
+      case 'challenges':
+        return <Challenges onRefresh={onRefresh} refreshing={refreshing} />;
+      case 'articles':
+        return <Articles onRefresh={onRefresh} refreshing={refreshing} />;
+      case 'community':
+        return <Community onRefresh={onRefresh} refreshing={refreshing} />;
+      default:
+        return <AITips onRefresh={onRefresh} refreshing={refreshing} />;
+    }
   };
 
   return (
@@ -45,133 +63,7 @@ export default function MotivationScreen() {
         ))}
       </View>
 
-      <ScrollView
-        style={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      >
-        {activeTab === 'tips' && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>🤖 AI-Powered Suggestions</Text>
-            <Text style={styles.sectionSubtitle}>
-              Personalized tips based on your activity patterns
-            </Text>
-
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardIcon}>🌡️</Text>
-                <View style={styles.cardInfo}>
-                  <Text style={styles.cardTitle}>Smart Thermostat Settings</Text>
-                  <Text style={styles.impactText}>Save 450kg CO₂/year</Text>
-                </View>
-              </View>
-              <Text style={styles.cardDescription}>
-                Set your thermostat 2-3°C lower in winter and higher in summer.
-                This simple change can reduce your energy consumption by 10-15%.
-              </Text>
-              <TouchableOpacity style={styles.actionButton}>
-                <Text style={styles.actionButtonText}>Try This Tip</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardIcon}>🚌</Text>
-                <View style={styles.cardInfo}>
-                  <Text style={styles.cardTitle}>Public Transport Challenge</Text>
-                  <Text style={styles.impactText}>Save 6.8kg CO₂/week</Text>
-                </View>
-              </View>
-              <Text style={styles.cardDescription}>
-                Try using public transport 3 times this week instead of driving.
-                You will reduce emissions and might discover new places!
-              </Text>
-              <TouchableOpacity style={styles.actionButton}>
-                <Text style={styles.actionButtonText}>Try This Tip</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
-        {activeTab === 'challenges' && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>🎯 Smart Challenges</Text>
-            <Text style={styles.sectionSubtitle}>
-              AI-adapted challenges based on your progress
-            </Text>
-
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardIcon}>👟</Text>
-                <View style={styles.cardInfo}>
-                  <Text style={styles.cardTitle}>Daily Walking Goal</Text>
-                  <Text style={styles.progressText}>3/7 days completed</Text>
-                </View>
-              </View>
-              <Text style={styles.cardDescription}>
-                Walk at least 8,000 steps per day for the next 7 days
-              </Text>
-              <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: '43%' }]} />
-              </View>
-              <TouchableOpacity style={styles.actionButton}>
-                <Text style={styles.actionButtonText}>Join Challenge</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
-        {activeTab === 'articles' && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📚 Featured Articles</Text>
-            <Text style={styles.sectionSubtitle}>
-              Latest insights from sustainability experts
-            </Text>
-
-            <TouchableOpacity style={styles.card}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardIcon}>🔬</Text>
-                <View style={styles.cardInfo}>
-                  <Text style={styles.cardTitle}>The Science Behind Carbon Offsetting</Text>
-                  <Text style={styles.metaText}>Dr. Sarah Climate • 5 min read</Text>
-                </View>
-              </View>
-              <Text style={styles.cardDescription}>
-                Understanding how carbon offset programs work and their real-world
-                impact on climate change.
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {activeTab === 'community' && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>👥 Community Highlights</Text>
-            <Text style={styles.sectionSubtitle}>
-              Celebrating real impact from our community
-            </Text>
-
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardIcon}>🚴‍♂️</Text>
-                <View style={styles.cardInfo}>
-                  <Text style={styles.cardTitle}>Alex Green</Text>
-                  <Text style={styles.metaText}>San Francisco, CA • 2 days ago</Text>
-                </View>
-              </View>
-              <Text style={styles.cardDescription}>
-                Completed 30-day bike commute challenge
-              </Text>
-              <View style={styles.impactBadge}>
-                <Text style={styles.impactBadgeText}>Saved 45kg CO₂</Text>
-              </View>
-            </View>
-
-            <TouchableOpacity style={styles.shareButton}>
-              <Text style={styles.shareButtonText}>Share Your Achievement</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </ScrollView>
+      {renderContent()}
     </SafeAreaView>
   );
 }

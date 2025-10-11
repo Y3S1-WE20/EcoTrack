@@ -7,22 +7,19 @@ import {
   TouchableOpacity,
   Alert,
   Switch,
+  RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: 'reminder' | 'achievement' | 'tip' | 'alert';
-  timestamp: Date;
-  read: boolean;
-}
+import { notificationAPI, type Notification } from '@/services/notificationAPI';
 
 const NotificationsScreen = () => {
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [notificationSettings, setNotificationSettings] = useState({
     dailyReminders: true,
     achievements: true,
@@ -31,69 +28,98 @@ const NotificationsScreen = () => {
   });
 
   useEffect(() => {
-    // Load sample notifications
-    const sampleNotifications: Notification[] = [
-      {
-        id: '1',
-        title: 'Daily Check-in Reminder',
-        message: "Don't forget to log today's activities to track your carbon footprint!",
-        type: 'reminder',
-        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-        read: false,
-      },
-      {
-        id: '2',
-        title: 'Achievement Unlocked! 🎉',
-        message: 'You\'ve successfully reduced your carbon footprint by 15% this week!',
-        type: 'achievement',
-        timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-        read: false,
-      },
-      {
-        id: '3',
-        title: 'Eco Tip of the Day 🌱',
-        message: 'Try walking or biking for short trips instead of driving. You could save up to 1.2kg CO₂ per trip!',
-        type: 'tip',
-        timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-        read: true,
-      },
-      {
-        id: '4',
-        title: 'Goal Alert',
-        message: 'You\'re 80% towards your weekly carbon reduction goal. Keep it up!',
-        type: 'alert',
-        timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
-        read: true,
-      },
-    ];
-    setNotifications(sampleNotifications);
+    loadNotifications();
+    // Generate daily notifications when the app opens
+    generateDailyNotifications();
   }, []);
 
-  const markAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(notification =>
-        notification.id === id ? { ...notification, read: true } : notification
-      )
-    );
+  const loadNotifications = async (refresh = false) => {
+    try {
+      if (refresh) setRefreshing(true);
+      else setLoading(true);
+
+      const response = await notificationAPI.getNotifications(1, 50);
+      if (response.success) {
+        setNotifications(response.data.notifications);
+        setUnreadCount(response.data.unreadCount);
+      }
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+      Alert.alert('Error', 'Failed to load notifications');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   };
 
-  const deleteNotification = (id: string) => {
-    setNotifications(prev => prev.filter(notification => notification.id !== id));
+  const generateDailyNotifications = async () => {
+    try {
+      // Generate daily notifications for all users
+      await notificationAPI.generateDailyNotifications();
+      console.log('Daily notifications generated');
+    } catch (error) {
+      console.error('Error generating daily notifications:', error);
+      // Don't show error to user as this is background operation
+    }
   };
 
-  const clearAllNotifications = () => {
-    Alert.alert(
-      'Clear All Notifications',
-      'Are you sure you want to clear all notifications?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear All',
-          style: 'destructive',
-          onPress: () => setNotifications([]),
-        },
-      ]
-    );
+  const markAsRead = async (id: string) => {
+    try {
+      const response = await notificationAPI.markAsRead(id);
+      if (response.success) {
+        setNotifications(prev =>
+          prev.map(notification =>
+            notification._id === id ? { ...notification, read: true } : notification
+          )
+        );
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      Alert.alert('Error', 'Failed to mark notification as read');
+    }
+  };
+
+  const deleteNotification = async (id: string) => {
+    try {
+      const response = await notificationAPI.deleteNotification(id);
+      if (response.success) {
+        setNotifications(prev => prev.filter(notification => notification._id !== id));
+        // Update unread count if the deleted notification was unread
+        const deletedNotification = notifications.find(n => n._id === id);
+        if (deletedNotification && !deletedNotification.read) {
+          setUnreadCount(prev => Math.max(0, prev - 1));
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      Alert.alert('Error', 'Failed to delete notification');
+    }
+  };
+
+  const clearAllNotifications = async () => {
+    try {
+      Alert.alert(
+        'Clear All Notifications',
+        'Are you sure you want to clear all notifications?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Clear All',
+            style: 'destructive',
+            onPress: async () => {
+              // Mark all as read first, then clear local state
+              await notificationAPI.markAllAsRead();
+              setNotifications([]);
+              setUnreadCount(0);
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      console.error('Error clearing notifications:', error);
+      Alert.alert('Error', 'Failed to clear notifications');
+    }
   };
 
   const getNotificationIcon = (type: string) => {
@@ -111,9 +137,10 @@ const NotificationsScreen = () => {
     }
   };
 
-  const getTimeAgo = (timestamp: Date) => {
+  const getTimeAgo = (dateString: string) => {
     const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - timestamp.getTime()) / (1000 * 60 * 60));
+    const date = new Date(dateString);
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
     
     if (diffInHours < 1) {
       return 'Just now';
@@ -141,7 +168,17 @@ const NotificationsScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView 
+        style={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => loadNotifications(true)}
+            colors={['#4CAF50']}
+            tintColor={'#4CAF50'}
+          />
+        }
+      >
         {/* Notification Settings */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Notification Settings</Text>
@@ -197,9 +234,16 @@ const NotificationsScreen = () => {
 
         {/* Notifications List */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Notifications</Text>
+          <Text style={styles.sectionTitle}>
+            Recent Notifications {unreadCount > 0 && `(${unreadCount} unread)`}
+          </Text>
           
-          {notifications.length === 0 ? (
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#4CAF50" />
+              <Text style={styles.loadingText}>Loading notifications...</Text>
+            </View>
+          ) : notifications.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>No notifications yet</Text>
               <Text style={styles.emptySubtext}>
@@ -209,12 +253,12 @@ const NotificationsScreen = () => {
           ) : (
             notifications.map((notification) => (
               <TouchableOpacity
-                key={notification.id}
+                key={notification._id}
                 style={[
                   styles.notificationItem,
                   !notification.read && styles.unreadNotification,
                 ]}
-                onPress={() => markAsRead(notification.id)}
+                onPress={() => markAsRead(notification._id)}
               >
                 <View style={styles.notificationHeader}>
                   <Text style={styles.notificationIcon}>
@@ -231,11 +275,11 @@ const NotificationsScreen = () => {
                       {notification.message}
                     </Text>
                     <Text style={styles.notificationTime}>
-                      {getTimeAgo(notification.timestamp)}
+                      {getTimeAgo(notification.createdAt)}
                     </Text>
                   </View>
                   <TouchableOpacity
-                    onPress={() => deleteNotification(notification.id)}
+                    onPress={() => deleteNotification(notification._id)}
                     style={styles.deleteButton}
                   >
                     <Text style={styles.deleteText}>×</Text>
@@ -388,6 +432,15 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    padding: 40,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 12,
   },
 });
 

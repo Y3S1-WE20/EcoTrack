@@ -19,6 +19,8 @@ const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 // const chatRoutes = require('./routes/chatRoutes'); // Old complex chat
 const simpleChatRoutes = require('./routes/simpleChatRoutes'); // New simple chat
+const motivationRoutes = require('./routes/motivationRoutes'); // Motivation hub routes
+const notificationRoutes = require('./routes/notificationRoutes'); // Notification routes
 const config = require('./config/config');
 
 const app = express();
@@ -36,6 +38,8 @@ app.use(`${config.API_PREFIX}/auth`, authRoutes);
 app.use(`${config.API_PREFIX}/habits`, habitRoutes);
 app.use(`${config.API_PREFIX}/profile`, profileRoutes);
 app.use(`${config.API_PREFIX}/chat`, simpleChatRoutes); // Using new simple chat
+app.use(`${config.API_PREFIX}/motivation`, motivationRoutes); // Motivation hub routes
+app.use(`${config.API_PREFIX}/notifications`, notificationRoutes); // Notification routes
 
 // Health check routes
 app.get('/', (req, res) => {
