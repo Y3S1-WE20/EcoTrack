@@ -1,5 +1,5 @@
 /**
- * EcoTrack AI Chat Routes - Simple & Reliable
+ * EcoTrack AI Chat Routes - Simple & Reliable with Enhanced Features
  */
 
 const express = require('express');
@@ -9,13 +9,23 @@ const {
   getChatHistory, 
   getAssistantStatus 
 } = require('../controllers/simpleChatController');
+const { 
+  processEnhancedMessage 
+} = require('../controllers/enhancedChatController');
 
 /**
  * @route   POST /api/v1/chat/message
- * @desc    Chat with EcoTrack AI Assistant
+ * @desc    Chat with EcoTrack AI Assistant (simple)
  * @access  Public
  */
 router.post('/message', processMessage);
+
+/**
+ * @route   POST /api/v1/chat/enhanced
+ * @desc    Enhanced chat with multimedia and multilingual support
+ * @access  Public
+ */
+router.post('/enhanced', processEnhancedMessage);
 
 /**
  * @route   GET /api/v1/chat/history

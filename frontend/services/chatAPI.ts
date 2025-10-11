@@ -26,6 +26,7 @@ export interface ChatResponse {
   suggestion?: string;
   habitLogId?: string;
   success: boolean;
+  language?: string;
 }
 
 class ChatAPI {
@@ -51,15 +52,16 @@ class ChatAPI {
     return null;
   }
 
-  private async tryRequest(url: string, endpoint: string, options: RequestInit = {}): Promise<any> {
+  private async tryRequest(url: string, endpoint: string, options: RequestInit = {}, isChat: boolean = false): Promise<any> {
     console.log(`[ChatAPI] Trying: ${url}${endpoint}`);
     
-    // Add timeout with custom error message
+    // Add timeout with custom error message - longer timeout for chat requests
     const controller = new AbortController();
+    const timeout = isChat ? apiConfig.getChatTimeout() : apiConfig.getTimeout();
     const timeoutId = setTimeout(() => {
       console.log(`[ChatAPI] Request timeout for: ${url}${endpoint}`);
       controller.abort();
-    }, apiConfig.getTimeout());
+    }, timeout);
     
     try {
       const response = await fetch(`${url}${endpoint}`, {
@@ -95,12 +97,12 @@ class ChatAPI {
     }
   }
 
-  private async request(endpoint: string, options: RequestInit = {}): Promise<any> {
+  private async request(endpoint: string, options: RequestInit = {}, isChat: boolean = false): Promise<any> {
     let lastError: Error | null = null;
     
     // On web, just use localhost
     if (Platform.OS === 'web') {
-      return this.tryRequest('http://localhost:4000/api/v1', endpoint, options);
+      return this.tryRequest('http://localhost:4000/api/v1', endpoint, options, isChat);
     }
 
     // On mobile, try URLs in smart order (cached working URL first)
@@ -108,7 +110,7 @@ class ChatAPI {
     
     for (const baseUrl of orderedUrls) {
       try {
-        const result = await this.tryRequest(baseUrl, endpoint, options);
+        const result = await this.tryRequest(baseUrl, endpoint, options, isChat);
         console.log(`[ChatAPI] Success with: ${baseUrl}`);
         
         // Cache this working URL for faster future requests
@@ -148,7 +150,19 @@ Troubleshooting:
       method: 'POST',
       headers,
       body: JSON.stringify({ message }),
-    });
+    }, true); // Mark as chat request for longer timeout
+  }
+
+  async sendEnhancedMessage(message: string, attachments?: any[]): Promise<ChatResponse> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    return this.request('/chat/enhanced', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ message, attachments }),
+    }, true); // Mark as chat request for longer timeout
   }
 
   async getChatHistory(userToken: string): Promise<any[]> {

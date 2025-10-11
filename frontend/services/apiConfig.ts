@@ -10,7 +10,8 @@ const API_URLS = [
 ];
 
 const WORKING_URL_KEY = 'ecotrack_working_api_url';
-const URL_TEST_TIMEOUT = 10000; // 10 seconds timeout for better connection
+const URL_TEST_TIMEOUT = 10000; // 10 seconds timeout for general requests
+const CHAT_TIMEOUT = 30000; // 30 seconds for AI chat requests
 
 class APIConfig {
   private workingUrl: string | null = null;
@@ -59,6 +60,10 @@ class APIConfig {
 
   getTimeout(): number {
     return URL_TEST_TIMEOUT;
+  }
+
+  getChatTimeout(): number {
+    return CHAT_TIMEOUT;
   }
 }
 

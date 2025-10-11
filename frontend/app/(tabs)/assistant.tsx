@@ -12,13 +12,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import MessageBubble, { Message } from '@/components/chat/MessageBubble';
-import ChatInput from '@/components/chat/ChatInput';
+import EnhancedMessageBubble, { EnhancedMessage } from '@/components/chat/EnhancedMessageBubble';
+import EnhancedChatInput from '@/components/chat/EnhancedChatInput';
 import chatAPI, { ChatResponse } from '@/services/chatAPI';
 import clearAllStoredData from '@/utils/clearStorage';
 
 const AssistantScreen = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<EnhancedMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [userToken, setUserToken] = useState<string | null>(null);
   const flatListRef = useRef<FlatList>(null);
@@ -34,11 +34,12 @@ const AssistantScreen = () => {
       setUserToken(token);
 
       // Add welcome message
-      const welcomeMessage: Message = {
+      const welcomeMessage: EnhancedMessage = {
         id: 'welcome',
-        text: "Hello! I'm EcoTrack, your friendly AI assistant! 🌱✨\n\nI can help you with:\n• Tracking daily activities and carbon footprint\n• Answering questions about sustainability\n• Providing eco-friendly tips and advice\n• General conversation about environmental topics\n\nTry asking me anything - from 'Hi, how are you?' to 'I drove 10 km today' or 'What are some ways to reduce my carbon footprint?'",
+        text: "Hello! I'm EcoTrack, your friendly AI assistant! 🌱✨\n\nI can help you with:\n• Tracking daily activities and carbon footprint\n• Answering questions about sustainability\n• Providing eco-friendly tips and advice\n• General conversation about environmental topics\n\nI now support multiple languages including Sinhala! You can send me text, images, documents, and voice messages.\n\nTry asking me anything - from 'Hi, how are you?' to 'මම කිලෝමීටර් 10 ක් වාහනයෙන් ගියා' or 'What are some ways to reduce my carbon footprint?'",
         isUser: false,
         timestamp: new Date(),
+        language: 'en'
       };
       setMessages([welcomeMessage]);
 
@@ -71,32 +72,34 @@ const AssistantScreen = () => {
     );
   };
 
-  const handleSendMessage = async (messageText: string) => {
-    if (!messageText.trim()) return;
+  const handleSendMessage = async (messageText: string, attachments?: any[]) => {
+    if (!messageText.trim() && (!attachments || attachments.length === 0)) return;
 
     // Add user message immediately
-    const userMessage: Message = {
+    const userMessage: EnhancedMessage = {
       id: Date.now().toString(),
       text: messageText,
       isUser: true,
       timestamp: new Date(),
+      attachments: attachments || [],
     };
 
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
 
     try {
-      // Send to backend
-      const response: ChatResponse = await chatAPI.sendMessage(messageText, userToken || undefined);
+      // Send to enhanced backend
+      const response: ChatResponse = await chatAPI.sendEnhancedMessage(messageText, attachments);
 
       // Create bot response message
-      const botMessage: Message = {
+      const botMessage: EnhancedMessage = {
         id: (Date.now() + 1).toString(),
         text: response.message,
         isUser: false,
         timestamp: new Date(),
         co2Data: response.co2Data,
         suggestion: response.suggestion,
+        language: (response.language as 'en' | 'si' | 'auto') || 'en',
       };
 
       setMessages(prev => [...prev, botMessage]);
@@ -124,11 +127,12 @@ const AssistantScreen = () => {
       }
       
       // Add error message
-      const errorBotMessage: Message = {
+      const errorBotMessage: EnhancedMessage = {
         id: (Date.now() + 1).toString(),
         text: errorMessage,
         isUser: false,
         timestamp: new Date(),
+        language: 'en',
       };
       setMessages(prev => [...prev, errorBotMessage]);
       
@@ -138,8 +142,8 @@ const AssistantScreen = () => {
     }
   };
 
-  const renderMessage = ({ item }: { item: Message }) => (
-    <MessageBubble message={item} />
+  const renderMessage = ({ item }: { item: EnhancedMessage }) => (
+    <EnhancedMessageBubble message={item} />
   );
 
   const renderEmptyState = () => (
@@ -188,10 +192,10 @@ const AssistantScreen = () => {
         </View>
       )}
 
-      <ChatInput 
+      <EnhancedChatInput 
         onSendMessage={handleSendMessage}
         isLoading={isLoading}
-        placeholder="Tell me about your activities (e.g., 'I drove 10 km')"
+        placeholder="Tell me about your activities or ask anything in English or Sinhala..."
       />
     </SafeAreaView>
   );
