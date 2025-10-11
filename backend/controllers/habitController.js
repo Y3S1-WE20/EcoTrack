@@ -295,6 +295,82 @@ const getWeeklyStats = async (req, res) => {
   }
 };
 
+// Get monthly statistics
+const getMonthlyStats = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const today = new Date();
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    monthStart.setHours(0, 0, 0, 0);
+    
+    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    monthEnd.setHours(23, 59, 59, 999);
+
+    // Get monthly progress data
+    const monthlyData = await HabitLog.getWeeklyProgress(userId, monthStart, monthEnd);
+
+    // Get daily totals for the month
+    const dailyStats = await HabitLog.aggregate([
+      {
+        $match: {
+          userId,
+          date: { $gte: monthStart, $lte: monthEnd }
+        }
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$date' } },
+          totalCO2: { $sum: '$co2Impact' },
+          activityCount: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id': 1 } }
+    ]);
+
+    // Get weekly breakdown for the month
+    const weeklyBreakdown = await HabitLog.aggregate([
+      {
+        $match: {
+          userId,
+          date: { $gte: monthStart, $lte: monthEnd }
+        }
+      },
+      {
+        $group: {
+          _id: { 
+            week: { $week: '$date' },
+            year: { $year: '$date' }
+          },
+          totalCO2: { $sum: '$co2Impact' },
+          activityCount: { $sum: 1 },
+          weekStart: { $min: '$date' },
+          weekEnd: { $max: '$date' }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.week': 1 } }
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        monthlyData,
+        dailyStats,
+        weeklyBreakdown,
+        period: {
+          start: monthStart,
+          end: monthEnd
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get monthly stats error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get monthly statistics'
+    });
+  }
+};
+
 // Update habit log
 const updateHabitLog = async (req, res) => {
   try {
@@ -397,6 +473,7 @@ module.exports = {
   getCategories,
   getActivityHistory,
   getWeeklyStats,
+  getMonthlyStats,
   updateHabitLog,
   deleteHabitLog
 };

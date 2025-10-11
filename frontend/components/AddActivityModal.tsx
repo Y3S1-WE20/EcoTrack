@@ -37,6 +37,17 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [estimatedCO2, setEstimatedCO2] = useState(0);
+  
+  // Custom activity states for "Other" category
+  const [isCustomActivity, setIsCustomActivity] = useState(false);
+  const [customActivity, setCustomActivity] = useState({
+    name: '',
+    description: '',
+    co2PerUnit: 0,
+    unit: 'custom',
+    unitLabel: 'units',
+    icon: '📝'
+  });
 
   useEffect(() => {
     if (visible) {
@@ -48,8 +59,10 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   useEffect(() => {
     if (selectedActivity) {
       setEstimatedCO2(selectedActivity.co2PerUnit * quantity);
+    } else if (isCustomActivity) {
+      setEstimatedCO2(customActivity.co2PerUnit * quantity);
     }
-  }, [selectedActivity, quantity]);
+  }, [selectedActivity, quantity, isCustomActivity, customActivity.co2PerUnit]);
 
   const loadCategories = async () => {
     try {
@@ -86,12 +99,31 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     setQuantity(1);
     setNotes('');
     setEstimatedCO2(0);
+    setIsCustomActivity(false);
+    setCustomActivity({
+      name: '',
+      description: '',
+      co2PerUnit: 0,
+      unit: 'custom',
+      unitLabel: 'units',
+      icon: '📝'
+    });
   };
 
   const handleCategorySelect = async (category: Category) => {
     setSelectedCategory(category);
-    await loadActivities(category._id);
-    setCurrentStep(2);
+    
+    // Check if this is the "Other" category for custom activities
+    if (category.name === 'Other') {
+      setIsCustomActivity(true);
+      // Load activities for Other category to get the Custom Activity template
+      await loadActivities(category._id);
+      setCurrentStep(2); // Skip activity selection, go to custom input
+    } else {
+      setIsCustomActivity(false);
+      await loadActivities(category._id);
+      setCurrentStep(2);
+    }
   };
 
   const handleActivitySelect = (activity: Activity) => {
@@ -100,22 +132,53 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (!selectedActivity) return;
+    if (!selectedActivity && !isCustomActivity) return;
 
     try {
       setLoading(true);
-      const response = await habitAPI.addHabitLog({
-        userId,
-        activityId: selectedActivity._id,
-        quantity,
-        notes: notes.trim() || undefined,
-      });
+      
+      if (isCustomActivity) {
+        // For custom activities, use the "Custom Activity" from Other category
+        // and include custom details in notes
+        const otherCategoryActivity = activities.find(a => a.name === 'Custom Activity');
+        if (!otherCategoryActivity) {
+          Alert.alert('Error', 'Custom activity template not found');
+          return;
+        }
 
-      if (response.success) {
-        onActivityAdded();
-        Alert.alert('Success', 'Activity added successfully!');
+        const customNotes = `Custom Activity: ${customActivity.name}
+Description: ${customActivity.description || 'No description'}
+CO₂ Impact: ${customActivity.co2PerUnit} kg per ${customActivity.unitLabel}
+${notes.trim() ? `Additional Notes: ${notes.trim()}` : ''}`;
+
+        const response = await habitAPI.addHabitLog({
+          userId,
+          activityId: otherCategoryActivity._id,
+          quantity,
+          notes: customNotes,
+        });
+
+        if (response.success) {
+          onActivityAdded();
+          Alert.alert('Success', 'Custom activity added successfully!');
+        } else {
+          Alert.alert('Error', response.error || 'Failed to add custom activity');
+        }
       } else {
-        Alert.alert('Error', response.error || 'Failed to add activity');
+        // Regular activity submission
+        const response = await habitAPI.addHabitLog({
+          userId,
+          activityId: selectedActivity!._id,
+          quantity,
+          notes: notes.trim() || undefined,
+        });
+
+        if (response.success) {
+          onActivityAdded();
+          Alert.alert('Success', 'Activity added successfully!');
+        } else {
+          Alert.alert('Error', response.error || 'Failed to add activity');
+        }
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to add activity');
@@ -129,7 +192,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
       case 1:
         return 'Select Category';
       case 2:
-        return 'Select Activity';
+        return isCustomActivity ? 'Custom Activity' : 'Select Activity';
       case 3:
         return 'Set Quantity';
       default:
@@ -199,38 +262,112 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     </ScrollView>
   );
 
-  const renderQuantitySelection = () => (
+  const renderCustomActivityForm = () => (
     <ScrollView style={styles.content}>
       <TouchableOpacity
         style={styles.backButton}
-        onPress={() => setCurrentStep(2)}
+        onPress={() => setCurrentStep(1)}
       >
         <Text style={styles.backText}>← Back</Text>
       </TouchableOpacity>
+      
+      <Text style={styles.stepTitle}>Custom Activity</Text>
+      
+      <View style={styles.customFormCard}>
+        <Text style={styles.formLabel}>Activity Name *</Text>
+        <TextInput
+          style={styles.formInput}
+          value={customActivity.name}
+          onChangeText={(text) => setCustomActivity(prev => ({ ...prev, name: text }))}
+          placeholder="e.g., Composting, Tree planting"
+          placeholderTextColor="#999"
+        />
+        
+        <Text style={styles.formLabel}>Description</Text>
+        <TextInput
+          style={styles.formInput}
+          value={customActivity.description}
+          onChangeText={(text) => setCustomActivity(prev => ({ ...prev, description: text }))}
+          placeholder="Brief description of the activity"
+          placeholderTextColor="#999"
+          multiline
+        />
+        
+        <Text style={styles.formLabel}>CO₂ Impact (kg per unit) *</Text>
+        <TextInput
+          style={styles.formInput}
+          value={customActivity.co2PerUnit.toString()}
+          onChangeText={(text) => {
+            const value = parseFloat(text) || 0;
+            setCustomActivity(prev => ({ ...prev, co2PerUnit: value }));
+          }}
+          placeholder="e.g., -0.5 for activities that reduce CO₂"
+          placeholderTextColor="#999"
+          keyboardType="numeric"
+        />
+        
+        <Text style={styles.formLabel}>Unit Label *</Text>
+        <TextInput
+          style={styles.formInput}
+          value={customActivity.unitLabel}
+          onChangeText={(text) => setCustomActivity(prev => ({ ...prev, unitLabel: text }))}
+          placeholder="e.g., trees, bags, hours"
+          placeholderTextColor="#999"
+        />
+        
+        <TouchableOpacity
+          style={[
+            styles.continueButton,
+            (!customActivity.name || !customActivity.unitLabel) && styles.continueButtonDisabled
+          ]}
+          onPress={() => {
+            if (customActivity.name && customActivity.unitLabel) {
+              setCurrentStep(3);
+            }
+          }}
+          disabled={!customActivity.name || !customActivity.unitLabel}
+        >
+          <Text style={styles.continueButtonText}>Continue</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+  );
 
-      <Text style={styles.stepTitle}>Set Quantity</Text>
+  const renderQuantitySelection = () => {
+    const currentActivity = isCustomActivity ? customActivity : selectedActivity;
+    if (!currentActivity) return null;
 
-      {selectedActivity && (
+    return (
+      <ScrollView style={styles.content}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => setCurrentStep(2)}
+        >
+          <Text style={styles.backText}>← Back</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.stepTitle}>Set Quantity</Text>
+
         <View style={styles.quantityCard}>
           <View style={styles.activityHeader}>
-            <Text style={styles.activityIcon}>{selectedActivity.icon}</Text>
+            <Text style={styles.activityIcon}>{currentActivity.icon}</Text>
             <View>
-              <Text style={styles.selectedActivityName}>{selectedActivity.name}</Text>
+              <Text style={styles.selectedActivityName}>{currentActivity.name}</Text>
               <Text style={styles.selectedActivityDetails}>
-                {selectedActivity.co2PerUnit} kg CO₂ per {selectedActivity.unit}
+                {currentActivity.co2PerUnit} kg CO₂ per {currentActivity.unit}
               </Text>
             </View>
           </View>
 
           <Text style={styles.quantityLabel}>
-            Quantity ({selectedActivity.unitLabel})
+            Quantity ({currentActivity.unitLabel})
           </Text>
           
           <View style={styles.sliderContainer}>
             <View style={styles.quantityControls}>
               <TouchableOpacity 
                 style={styles.quantityButton}
-                onPress={() => setQuantity(Math.max(0.1, quantity - (selectedActivity.unit === 'km' ? 1 : 0.1)))}
+                onPress={() => setQuantity(Math.max(0.1, quantity - (currentActivity.unit === 'km' ? 1 : 0.1)))}
               >
                 <Text style={styles.quantityButtonText}>-</Text>
               </TouchableOpacity>
@@ -247,12 +384,12 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
               
               <TouchableOpacity 
                 style={styles.quantityButton}
-                onPress={() => setQuantity(quantity + (selectedActivity.unit === 'km' ? 1 : 0.1))}
+                onPress={() => setQuantity(quantity + (currentActivity.unit === 'km' ? 1 : 0.1))}
               >
                 <Text style={styles.quantityButtonText}>+</Text>
               </TouchableOpacity>
             </View>
-            <Text style={styles.quantityValue}>{quantity.toFixed(1)} {selectedActivity.unitLabel}</Text>
+            <Text style={styles.quantityValue}>{quantity.toFixed(1)} {currentActivity.unitLabel}</Text>
           </View>
 
           <View style={styles.estimationCard}>
@@ -285,9 +422,9 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
             )}
           </TouchableOpacity>
         </View>
-      )}
-    </ScrollView>
-  );
+      </ScrollView>
+    );
+  };
 
   return (
     <Modal
@@ -316,7 +453,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
         ) : (
           <>
             {currentStep === 1 && renderCategorySelection()}
-            {currentStep === 2 && renderActivitySelection()}
+            {currentStep === 2 && (isCustomActivity ? renderCustomActivityForm() : renderActivitySelection())}
             {currentStep === 3 && renderQuantitySelection()}
           </>
         )}
@@ -587,6 +724,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   addButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  customFormCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  formLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#212121',
+    marginBottom: 8,
+    marginTop: 16,
+  },
+  formInput: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    color: '#212121',
+    backgroundColor: '#FFFFFF',
+    minHeight: 44,
+  },
+  continueButton: {
+    backgroundColor: '#212121',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginTop: 24,
+  },
+  continueButtonDisabled: {
+    backgroundColor: '#CCCCCC',
+  },
+  continueButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',

@@ -7,6 +7,7 @@ const {
   getCategories,
   getActivityHistory,
   getWeeklyStats,
+  getMonthlyStats,
   updateHabitLog,
   deleteHabitLog
 } = require('../controllers/habitController');
@@ -28,6 +29,9 @@ router.get('/history/:userId', getActivityHistory);
 
 // GET /api/v1/habits/stats/weekly/:userId - Get weekly statistics
 router.get('/stats/weekly/:userId', getWeeklyStats);
+
+// GET /api/v1/habits/stats/monthly/:userId - Get monthly statistics
+router.get('/stats/monthly/:userId', getMonthlyStats);
 
 // PUT /api/v1/habits/log/:logId - Update habit log
 router.put('/log/:logId', updateHabitLog);

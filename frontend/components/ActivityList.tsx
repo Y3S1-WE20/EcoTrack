@@ -53,34 +53,62 @@ const ActivityList: React.FC<ActivityListProps> = ({ activities, onRefresh }) =>
     );
   };
 
-  const renderActivityItem = (activity: HabitLog) => (
-    <View key={activity._id} style={styles.activityCard}>
-      <View style={styles.activityMain}>
-        <Text style={styles.activityIcon}>{activity.activity.icon}</Text>
-        <View style={styles.activityInfo}>
-          <Text style={styles.activityName}>{activity.activity.name}</Text>
-          <Text style={styles.activityDetails}>
-            {activity.quantity} {activity.activity.unit} • {formatTime(activity.date)}
-          </Text>
-          {activity.notes && (
-            <Text style={styles.activityNotes}>{activity.notes}</Text>
-          )}
+  const renderActivityItem = (activity: HabitLog) => {
+    // Safety check for missing activity data
+    if (!activity.activity) {
+      console.warn('Activity data is missing for habit log:', activity._id);
+      return (
+        <View key={activity._id} style={styles.activityCard}>
+          <View style={styles.activityMain}>
+            <Text style={styles.activityIcon}>❓</Text>
+            <View style={styles.activityInfo}>
+              <Text style={styles.activityName}>Unknown Activity</Text>
+              <Text style={styles.activityDetails}>
+                {activity.quantity} units • {formatTime(activity.date)}
+              </Text>
+              {activity.notes && (
+                <Text style={styles.activityNotes}>{activity.notes}</Text>
+              )}
+            </View>
+            <View style={styles.activityImpact}>
+              <Text style={styles.impactValue}>
+                {activity.co2Impact?.toFixed(1) || '0.0'} kg CO₂
+              </Text>
+            </View>
+          </View>
         </View>
-        <View style={styles.activityImpact}>
-          <Text style={styles.impactValue}>
-            {activity.co2Impact.toFixed(1)} kg CO₂
-          </Text>
+      );
+    }
+
+    return (
+      <View key={activity._id} style={styles.activityCard}>
+        <View style={styles.activityMain}>
+          <Text style={styles.activityIcon}>{activity.activity.icon}</Text>
+          <View style={styles.activityInfo}>
+            <Text style={styles.activityName}>{activity.activity.name}</Text>
+            <Text style={styles.activityDetails}>
+              {activity.quantity} {activity.activity.unit} • {formatTime(activity.date)}
+            </Text>
+            {activity.notes && (
+              <Text style={styles.activityNotes}>{activity.notes}</Text>
+            )}
+          </View>
+          <View style={styles.activityImpact}>
+            <Text style={styles.impactValue}>
+              {activity.co2Impact.toFixed(1)} kg CO₂
+            </Text>
+          </View>
         </View>
+        
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => handleDeleteActivity(activity._id)}
+        >
+          <Text style={styles.deleteButtonText}>Delete</Text>
+        </TouchableOpacity>
       </View>
-      
-      <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => handleDeleteActivity(activity._id)}
-      >
-        <Text style={styles.deleteButtonText}>Delete</Text>
-      </TouchableOpacity>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>

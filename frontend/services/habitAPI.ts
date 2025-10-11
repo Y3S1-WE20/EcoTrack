@@ -165,6 +165,11 @@ class HabitAPI {
     return this.request<any>(`/habits/stats/weekly/${userId}`);
   }
 
+  // Get monthly statistics
+  async getMonthlyStats(userId: string): Promise<ApiResponse<any>> {
+    return this.request<any>(`/habits/stats/monthly/${userId}`);
+  }
+
   // Update habit log
   async updateHabitLog(
     logId: string,
