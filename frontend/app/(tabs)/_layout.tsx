@@ -42,16 +42,16 @@ export default function TabLayout() {
         name="goals"
         options={{
           title: 'Goals',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="flag.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="target" color={color} />,
         }}
       />
       
-      {/* Explore page */}
+      {/* Motivation Hub */}
       <Tabs.Screen
-        name="explore"
+        name="motivation"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="safari.fill" color={color} />,
+          title: 'Motivation',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="star.fill" color={color} />,
         }}
       />
       
@@ -64,11 +64,11 @@ export default function TabLayout() {
         }}
       />
       
-      {/* Phase 4: Motivation Hub - accessible from Profile */}
+      {/* Explore page */}
       <Tabs.Screen
-        name="motivation"
+        name="explore"
         options={{
-          href: null, // Hide from tabs - will be accessed from Profile page
+          href: null, // Hide from main tabs - accessed through other means
         }}
       />
       

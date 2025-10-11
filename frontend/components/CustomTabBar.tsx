@@ -19,7 +19,9 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, descriptors, navigat
       case 'assistant':
         return <IconSymbol size={size} name="message.fill" color={color} />; // Assistant/Chat
       case 'goals':
-        return <IconSymbol size={size} name="chart.bar.fill" color={color} />; // Goals/Progress
+        return <IconSymbol size={size} name="target" color={color} />; // Goals/Targets
+      case 'motivation':
+        return <IconSymbol size={size} name="star.fill" color={color} />; // Motivation/Star
       case 'profile':
         return <IconSymbol size={size} name="person.fill" color={color} />; // Profile
       default:
@@ -35,6 +37,8 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, descriptors, navigat
         return 'Assistant';
       case 'goals':
         return 'Goals';
+      case 'motivation':
+        return 'Motivation';
       case 'profile':
         return 'Profile';
       default:

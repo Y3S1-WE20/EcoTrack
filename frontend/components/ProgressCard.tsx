@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { TodayData } from '../services/habitAPI';
 
 interface ProgressCardProps {
@@ -7,6 +8,7 @@ interface ProgressCardProps {
 }
 
 const ProgressCard: React.FC<ProgressCardProps> = ({ todayData }) => {
+  const { theme } = useAppTheme();
   const progressPercentage = Math.min(
     (todayData.todayTotal / (todayData.weeklyGoal / 7)) * 100,
     100
@@ -32,22 +34,22 @@ const ProgressCard: React.FC<ProgressCardProps> = ({ todayData }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.surface }]}>
       <View style={styles.header}>
         <Text style={styles.badge}>✅</Text>
-        <Text style={styles.title}>CO₂ Impact Today</Text>
+        <Text style={[styles.title, { color: theme.text }]}>CO₂ Impact Today</Text>
       </View>
 
       <View style={styles.content}>
         <View style={styles.targetRow}>
-          <Text style={styles.targetLabel}>
+          <Text style={[styles.targetLabel, { color: theme.textSecondary }]}>
             Daily Target: {(todayData.weeklyGoal / 7).toFixed(1)} kg
           </Text>
-          <Text style={styles.percentage}>{Math.round(progressPercentage)}%</Text>
+          <Text style={[styles.percentage, { color: getProgressColor() }]}>{Math.round(progressPercentage)}%</Text>
         </View>
 
         <View style={styles.progressBarContainer}>
-          <View style={styles.progressBarBg}>
+          <View style={[styles.progressBarBg, { backgroundColor: theme.border }]}>
             <View
               style={[
                 styles.progressBarFill,
@@ -62,7 +64,7 @@ const ProgressCard: React.FC<ProgressCardProps> = ({ todayData }) => {
 
         <View style={styles.messageContainer}>
           <Text style={styles.badge}>✅</Text>
-          <Text style={styles.encouragementMessage}>
+          <Text style={[styles.encouragementMessage, { color: theme.text }]}>
             {getEncouragementMessage()}
           </Text>
         </View>
@@ -70,15 +72,15 @@ const ProgressCard: React.FC<ProgressCardProps> = ({ todayData }) => {
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={styles.statIcon}>🚗</Text>
-            <Text style={styles.statValue}>
+            <Text style={[styles.statValue, { color: theme.text }]}>
               {Math.round(todayData.todayTotal * 4.8)} km
             </Text>
-            <Text style={styles.statLabel}>driving</Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>driving</Text>
           </View>
           <View style={styles.statItem}>
             <Text style={styles.statIcon}>🌳</Text>
-            <Text style={styles.statValue}>{calculateTreesNeeded()}</Text>
-            <Text style={styles.statLabel}>trees needed</Text>
+            <Text style={[styles.statValue, { color: theme.text }]}>{calculateTreesNeeded()}</Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>trees needed</Text>
           </View>
         </View>
       </View>
@@ -88,7 +90,6 @@ const ProgressCard: React.FC<ProgressCardProps> = ({ todayData }) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#E8F5E8',
     marginHorizontal: 20,
     marginVertical: 16,
     borderRadius: 16,
@@ -111,7 +112,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2E7D32',
   },
   content: {
     gap: 16,
@@ -123,12 +123,10 @@ const styles = StyleSheet.create({
   },
   targetLabel: {
     fontSize: 14,
-    color: '#2E7D32',
     fontWeight: '500',
   },
   percentage: {
     fontSize: 14,
-    color: '#2E7D32',
     fontWeight: 'bold',
   },
   progressBarContainer: {
@@ -136,7 +134,6 @@ const styles = StyleSheet.create({
   },
   progressBarBg: {
     height: 8,
-    backgroundColor: '#C8E6C9',
     borderRadius: 4,
     overflow: 'hidden',
   },
@@ -150,7 +147,6 @@ const styles = StyleSheet.create({
   },
   encouragementMessage: {
     fontSize: 14,
-    color: '#2E7D32',
     fontWeight: '500',
     marginLeft: 8,
   },
@@ -169,12 +165,10 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#2E7D32',
     marginBottom: 2,
   },
   statLabel: {
     fontSize: 12,
-    color: '#4E7B52',
   },
 });
 

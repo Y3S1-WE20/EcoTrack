@@ -18,6 +18,7 @@ import ProgressCard from './ProgressCard';
 import ActivityList from './ActivityList';
 import { habitAPI, TodayData } from '../services/habitAPI';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAppTheme } from '@/contexts/ThemeContext';
 
 const HabitsScreen = () => {
   const [todayData, setTodayData] = useState<TodayData | null>(null);
@@ -25,6 +26,7 @@ const HabitsScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const { user, isAuthenticated } = useAuth();
+  const { theme } = useAppTheme();
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -78,9 +80,9 @@ const HabitsScreen = () => {
   // Don't render anything if not authenticated
   if (!isAuthenticated) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.loadingContainer}>
-          <Text>Please sign in to continue</Text>
+          <Text style={{ color: theme.text }}>Please sign in to continue</Text>
         </View>
       </SafeAreaView>
     );
@@ -88,24 +90,24 @@ const HabitsScreen = () => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4CAF50" />
-          <Text style={styles.loadingText}>Loading your impact...</Text>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={[styles.loadingText, { color: theme.text }]}>Loading your impact...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar style={theme.isDark ? "light" : "dark"} />
       
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: theme.surface }]}>
         <View>
-          <Text style={styles.headerTitle}>Today's Impact</Text>
-          <Text style={styles.headerSubtitle}>Track your carbon footprint</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Today's Impact</Text>
+          <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>Track your carbon footprint</Text>
         </View>
         <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
           <Text style={styles.refreshIcon}>🔄</Text>
@@ -113,7 +115,7 @@ const HabitsScreen = () => {
       </View>
 
       <ScrollView
-        style={styles.scrollView}
+        style={[styles.scrollView, { backgroundColor: theme.background }]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
@@ -121,29 +123,29 @@ const HabitsScreen = () => {
       >
         {/* Today's Stats */}
         <View style={styles.statsContainer}>
-          <View style={styles.todayCard}>
+          <View style={[styles.todayCard, { backgroundColor: theme.surface }]}>
             <View style={styles.todayHeader}>
-              <Text style={styles.todayLabel}>Today</Text>
+              <Text style={[styles.todayLabel, { color: theme.textSecondary }]}>Today</Text>
               <Text style={styles.trendIcon}>📈</Text>
             </View>
-            <Text style={styles.todayAmount}>
+            <Text style={[styles.todayAmount, { color: theme.text }]}>
               {todayData?.todayTotal || 0.0}
-              <Text style={styles.unit}> kg CO₂</Text>
+              <Text style={[styles.unit, { color: theme.textSecondary }]}> kg CO₂</Text>
             </Text>
-            <Text style={styles.encouragement}>
+            <Text style={[styles.encouragement, { color: theme.primary }]}>
               {(todayData?.todayTotal ?? 0) < 5 ? 'Great job!' : 'Keep improving!'}
             </Text>
           </View>
 
-          <View style={styles.goalCard}>
+          <View style={[styles.goalCard, { backgroundColor: theme.surface }]}>
             <View style={styles.goalHeader}>
-              <Text style={styles.goalLabel}>Weekly Goal</Text>
+              <Text style={[styles.goalLabel, { color: theme.textSecondary }]}>Weekly Goal</Text>
               <Text style={styles.goalIcon}>🎯</Text>
             </View>
-            <Text style={styles.goalPercentage}>
+            <Text style={[styles.goalPercentage, { color: theme.text }]}>
               {todayData?.weeklyProgress || 0}%
             </Text>
-            <Text style={styles.goalTarget}>
+            <Text style={[styles.goalTarget, { color: theme.textSecondary }]}>
               {todayData?.weeklyGoal || 50} kg target
             </Text>
           </View>
@@ -161,7 +163,7 @@ const HabitsScreen = () => {
 
       {/* Add Activity Button */}
       <TouchableOpacity
-        style={styles.addButton}
+        style={[styles.addButton, { backgroundColor: theme.primary }]}
         onPress={() => setIsAddModalVisible(true)}
       >
         <Text style={styles.addButtonText}>+</Text>
@@ -180,7 +182,6 @@ const HabitsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
   },
   loadingContainer: {
     flex: 1,
@@ -190,7 +191,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
   },
   header: {
     flexDirection: 'row',
@@ -198,18 +198,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#212121',
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#666',
     marginTop: 2,
   },
   refreshButton: {
@@ -229,7 +226,6 @@ const styles = StyleSheet.create({
   },
   todayCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 20,
     ...Platform.select({
@@ -253,7 +249,6 @@ const styles = StyleSheet.create({
   },
   todayLabel: {
     fontSize: 14,
-    color: '#666',
     fontWeight: '500',
   },
   trendIcon: {
@@ -262,22 +257,18 @@ const styles = StyleSheet.create({
   todayAmount: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#212121',
     marginBottom: 4,
   },
   unit: {
     fontSize: 16,
     fontWeight: 'normal',
-    color: '#666',
   },
   encouragement: {
     fontSize: 12,
-    color: '#4CAF50',
     fontWeight: '500',
   },
   goalCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 20,
     ...Platform.select({
@@ -301,7 +292,6 @@ const styles = StyleSheet.create({
   },
   goalLabel: {
     fontSize: 14,
-    color: '#666',
     fontWeight: '500',
   },
   goalIcon: {
@@ -310,12 +300,10 @@ const styles = StyleSheet.create({
   goalPercentage: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#212121',
     marginBottom: 4,
   },
   goalTarget: {
     fontSize: 12,
-    color: '#666',
   },
   addButton: {
     position: 'absolute',
@@ -324,7 +312,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#212121',
     justifyContent: 'center',
     alignItems: 'center',
     ...Platform.select({
