@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { profileAPI } from '@/services/profileAPI';
 
 interface ProfileData {
@@ -55,6 +56,7 @@ interface MotivationHubProps {
 
 export default function MotivationHub({ onChallengePress }: MotivationHubProps) {
   const { user } = useAuth();
+  const { theme } = useAppTheme();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -105,10 +107,10 @@ export default function MotivationHub({ onChallengePress }: MotivationHubProps) 
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4CAF50" />
-          <Text style={styles.loadingText}>Loading your eco journey...</Text>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={[styles.loadingText, { color: theme.text }]}>Loading your eco journey...</Text>
         </View>
       </SafeAreaView>
     );
@@ -116,10 +118,10 @@ export default function MotivationHub({ onChallengePress }: MotivationHubProps) 
 
   if (!profileData) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Unable to load profile data</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadProfileData}>
+          <Text style={[styles.errorText, { color: theme.text }]}>Unable to load profile data</Text>
+          <TouchableOpacity style={[styles.retryButton, { backgroundColor: theme.primary }]} onPress={loadProfileData}>
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -132,9 +134,9 @@ export default function MotivationHub({ onChallengePress }: MotivationHubProps) 
     : 0;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView
-        style={styles.content}
+        style={[styles.content, { backgroundColor: theme.background }]}
         refreshControl={
           <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
         }
@@ -142,25 +144,25 @@ export default function MotivationHub({ onChallengePress }: MotivationHubProps) 
       >
         {/* Header with greeting */}
         <View style={styles.header}>
-          <Text style={styles.greeting}>Hello, {user?.name || 'Eco Warrior'}! 👋</Text>
-          <Text style={styles.subtitle}>Ready to make a difference today?</Text>
+          <Text style={[styles.greeting, { color: theme.text }]}>Hello, {user?.name || 'Eco Warrior'}! 👋</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Ready to make a difference today?</Text>
         </View>
 
         {/* Carbon Profile Summary */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🌍 Your Carbon Profile</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>🌍 Your Carbon Profile</Text>
           <View style={styles.statsContainer}>
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{formatCO2(profileData.profile.co2Baseline)}</Text>
-              <Text style={styles.statLabel}>Weekly Baseline</Text>
+            <View style={[styles.statCard, { backgroundColor: theme.surface }]}>
+              <Text style={[styles.statValue, { color: theme.text }]}>{formatCO2(profileData.profile.co2Baseline)}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Weekly Baseline</Text>
             </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{formatCO2(profileData.profile.totalCo2Saved)}</Text>
-              <Text style={styles.statLabel}>CO₂ Saved</Text>
+            <View style={[styles.statCard, { backgroundColor: theme.surface }]}>
+              <Text style={[styles.statValue, { color: theme.text }]}>{formatCO2(profileData.profile.totalCo2Saved)}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>CO₂ Saved</Text>
             </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{profileData.profile.streakDays}</Text>
-              <Text style={styles.statLabel}>Day Streak</Text>
+            <View style={[styles.statCard, { backgroundColor: theme.surface }]}>
+              <Text style={[styles.statValue, { color: theme.text }]}>{profileData.profile.streakDays}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Day Streak</Text>
             </View>
           </View>
         </View>
@@ -168,34 +170,34 @@ export default function MotivationHub({ onChallengePress }: MotivationHubProps) 
         {/* Current Challenge */}
         {profileData.currentChallenge && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>🎯 This Week's Challenge</Text>
-            <View style={styles.challengeCard}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>🎯 This Week's Challenge</Text>
+            <View style={[styles.challengeCard, { backgroundColor: theme.surface }]}>
               <View style={styles.challengeHeader}>
-                <Text style={styles.challengeTitle}>{profileData.currentChallenge.title}</Text>
-                <Text style={styles.challengeDays}>
+                <Text style={[styles.challengeTitle, { color: theme.text }]}>{profileData.currentChallenge.title}</Text>
+                <Text style={[styles.challengeDays, { color: theme.textSecondary }]}>
                   {daysUntilChallengeEnd > 0 ? `${daysUntilChallengeEnd} days left` : 'Ends today!'}
                 </Text>
               </View>
-              <Text style={styles.challengeDescription}>
+              <Text style={[styles.challengeDescription, { color: theme.textSecondary }]}>
                 {profileData.currentChallenge.description}
               </Text>
               
               <View style={styles.progressContainer}>
                 <View style={styles.progressHeader}>
-                  <Text style={styles.progressLabel}>Progress</Text>
-                  <Text style={styles.progressPercentage}>
+                  <Text style={[styles.progressLabel, { color: theme.text }]}>Progress</Text>
+                  <Text style={[styles.progressPercentage, { color: theme.primary }]}>
                     {Math.round(profileData.currentChallenge.progress)}%
                   </Text>
                 </View>
-                <View style={styles.progressBarContainer}>
+                <View style={[styles.progressBarContainer, { backgroundColor: theme.border }]}>
                   <View 
                     style={[
                       styles.progressBar, 
-                      { width: `${profileData.currentChallenge.progress}%` }
+                      { width: `${profileData.currentChallenge.progress}%`, backgroundColor: theme.primary }
                     ]} 
                   />
                 </View>
-                <Text style={styles.progressTarget}>
+                <Text style={[styles.progressTarget, { color: theme.textSecondary }]}>
                   Target: {formatCO2(profileData.currentChallenge.targetReduction)} CO₂ reduction
                 </Text>
               </View>
@@ -203,13 +205,13 @@ export default function MotivationHub({ onChallengePress }: MotivationHubProps) 
               {!profileData.currentChallenge.completed && (
                 <View style={styles.challengeActions}>
                   <TouchableOpacity
-                    style={styles.progressButton}
+                    style={[styles.progressButton, { backgroundColor: theme.primary }]}
                     onPress={() => handleChallengeProgress(profileData.currentChallenge!.progress + 25)}
                   >
                     <Text style={styles.progressButtonText}>+25% Progress</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.progressButton, styles.completeButton]}
+                    style={[styles.progressButton, styles.completeButton, { backgroundColor: theme.success }]}
                     onPress={() => handleChallengeProgress(100)}
                   >
                     <Text style={styles.progressButtonText}>Mark Complete</Text>
@@ -228,20 +230,20 @@ export default function MotivationHub({ onChallengePress }: MotivationHubProps) 
 
         {/* Badges Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🏆 Your Badges</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>🏆 Your Badges</Text>
           {profileData.badges && profileData.badges.length > 0 ? (
             <View style={styles.badgesGrid}>
               {profileData.badges.map((badge: any, index: number) => (
-                <View key={index} style={styles.badgeCard}>
+                <View key={index} style={[styles.badgeCard, { backgroundColor: theme.surface }]}>
                   <Text style={styles.badgeIcon}>{badge.icon}</Text>
-                  <Text style={styles.badgeName}>{badge.name}</Text>
-                  <Text style={styles.badgeDescription}>{badge.description}</Text>
+                  <Text style={[styles.badgeName, { color: theme.text }]}>{badge.name}</Text>
+                  <Text style={[styles.badgeDescription, { color: theme.textSecondary }]}>{badge.description}</Text>
                 </View>
               ))}
             </View>
           ) : (
             <View style={styles.noBadgesContainer}>
-              <Text style={styles.noBadgesText}>Complete challenges to earn your first badges!</Text>
+              <Text style={[styles.noBadgesText, { color: theme.textSecondary }]}>Complete challenges to earn your first badges!</Text>
             </View>
           )}
         </View>
@@ -249,11 +251,11 @@ export default function MotivationHub({ onChallengePress }: MotivationHubProps) 
         {/* Recent Achievements */}
         {profileData.recentCompletedChallenges && profileData.recentCompletedChallenges.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📈 Recent Achievements</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>📈 Recent Achievements</Text>
             {profileData.recentCompletedChallenges.map((challenge: any, index: number) => (
-              <View key={index} style={styles.achievementCard}>
-                <Text style={styles.achievementTitle}>{challenge.challengeId}</Text>
-                <Text style={styles.achievementDetails}>
+              <View key={index} style={[styles.achievementCard, { backgroundColor: theme.surface }]}>
+                <Text style={[styles.achievementTitle, { color: theme.text }]}>{challenge.challengeId}</Text>
+                <Text style={[styles.achievementDetails, { color: theme.textSecondary }]}>
                   Completed {new Date(challenge.completedAt).toLocaleDateString()} • 
                   Saved {formatCO2(challenge.co2Saved)} CO₂
                 </Text>
@@ -264,11 +266,11 @@ export default function MotivationHub({ onChallengePress }: MotivationHubProps) 
 
         {/* Motivational Quote */}
         <View style={styles.section}>
-          <View style={styles.quoteCard}>
-            <Text style={styles.quote}>
+          <View style={[styles.quoteCard, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.quote, { color: theme.text }]}>
               "The best time to plant a tree was 20 years ago. The second best time is now."
             </Text>
-            <Text style={styles.quoteAuthor}>— Chinese Proverb</Text>
+            <Text style={[styles.quoteAuthor, { color: theme.textSecondary }]}>— Chinese Proverb</Text>
           </View>
         </View>
       </ScrollView>
@@ -279,25 +281,20 @@ export default function MotivationHub({ onChallengePress }: MotivationHubProps) 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
   },
   content: {
     flex: 1,
   },
   header: {
-    padding: 20,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e1e1e1',
+    paddingHorizontal: 20,
+    paddingVertical: 24,
   },
   greeting: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
     marginTop: 4,
   },
   section: {
@@ -307,7 +304,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 16,
   },
   statsContainer: {
@@ -317,7 +313,6 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#fff',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -330,16 +325,13 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#4CAF50',
   },
   statLabel: {
     fontSize: 12,
-    color: '#666',
     marginTop: 4,
     textAlign: 'center',
   },
   challengeCard: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 20,
     shadowColor: '#000',
@@ -357,17 +349,14 @@ const styles = StyleSheet.create({
   challengeTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
     flex: 1,
   },
   challengeDays: {
     fontSize: 14,
-    color: '#FF6B35',
     fontWeight: '500',
   },
   challengeDescription: {
     fontSize: 14,
-    color: '#666',
     lineHeight: 20,
     marginBottom: 16,
   },
@@ -382,29 +371,24 @@ const styles = StyleSheet.create({
   },
   progressLabel: {
     fontSize: 14,
-    color: '#333',
     fontWeight: '500',
   },
   progressPercentage: {
     fontSize: 14,
-    color: '#4CAF50',
     fontWeight: '600',
   },
   progressBarContainer: {
     height: 8,
-    backgroundColor: '#e1e1e1',
     borderRadius: 4,
     overflow: 'hidden',
     marginBottom: 8,
   },
   progressBar: {
     height: '100%',
-    backgroundColor: '#4CAF50',
     borderRadius: 4,
   },
   progressTarget: {
     fontSize: 12,
-    color: '#666',
   },
   challengeActions: {
     flexDirection: 'row',
@@ -412,31 +396,26 @@ const styles = StyleSheet.create({
   },
   progressButton: {
     flex: 1,
-    backgroundColor: '#f1f8e9',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#4CAF50',
   },
   completeButton: {
-    backgroundColor: '#4CAF50',
+    // backgroundColor will be overridden by theme
   },
   progressButtonText: {
     fontSize: 14,
-    color: '#4CAF50',
+    color: '#fff',
     fontWeight: '600',
   },
   completedBanner: {
-    backgroundColor: '#e8f5e8',
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
   },
   completedText: {
     fontSize: 16,
-    color: '#2e7d32',
     fontWeight: '600',
   },
   badgesGrid: {
@@ -445,7 +424,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   badgeCard: {
-    backgroundColor: '#fff',
     width: '47%',
     padding: 16,
     borderRadius: 12,
@@ -463,29 +441,24 @@ const styles = StyleSheet.create({
   badgeName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
     textAlign: 'center',
     marginBottom: 4,
   },
   badgeDescription: {
     fontSize: 12,
-    color: '#666',
     textAlign: 'center',
     lineHeight: 16,
   },
   noBadgesContainer: {
-    backgroundColor: '#fff',
     padding: 20,
     borderRadius: 12,
     alignItems: 'center',
   },
   noBadgesText: {
     fontSize: 16,
-    color: '#666',
     textAlign: 'center',
   },
   achievementCard: {
-    backgroundColor: '#fff',
     padding: 16,
     borderRadius: 8,
     marginBottom: 8,
@@ -498,15 +471,12 @@ const styles = StyleSheet.create({
   achievementTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
   },
   achievementDetails: {
     fontSize: 14,
-    color: '#666',
     marginTop: 4,
   },
   quoteCard: {
-    backgroundColor: '#fff',
     padding: 20,
     borderRadius: 12,
     shadowColor: '#000',
@@ -518,13 +488,11 @@ const styles = StyleSheet.create({
   quote: {
     fontSize: 16,
     fontStyle: 'italic',
-    color: '#333',
     lineHeight: 24,
     textAlign: 'center',
   },
   quoteAuthor: {
     fontSize: 14,
-    color: '#666',
     textAlign: 'center',
     marginTop: 8,
   },
@@ -535,7 +503,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#666',
     marginTop: 12,
   },
   errorContainer: {
@@ -546,12 +513,10 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#666',
     textAlign: 'center',
     marginBottom: 16,
   },
   retryButton: {
-    backgroundColor: '#4CAF50',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,

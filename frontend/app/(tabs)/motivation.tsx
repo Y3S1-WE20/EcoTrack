@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import AITips from '../../components/AITips';
 import Articles from '../../components/Articles';
 import Community from '../../components/Community';
@@ -14,6 +15,7 @@ import Challenges from '../../components/Challenges';
 export default function MotivationScreen() {
   const [activeTab, setActiveTab] = useState('tips');
   const [refreshing, setRefreshing] = useState(false);
+  const { theme } = useAppTheme();
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -37,13 +39,13 @@ export default function MotivationScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Motivation Hub ⭐</Text>
-        <Text style={styles.subtitle}>Welcome back, Eco Warrior!</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.header, { backgroundColor: theme.surface }]}>
+        <Text style={[styles.title, { color: theme.text }]}>Motivation Hub ⭐</Text>
+        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Welcome back, Eco Warrior!</Text>
       </View>
 
-      <View style={styles.tabBar}>
+      <View style={[styles.tabBar, { backgroundColor: theme.surface }]}>
         {[
           { key: 'tips', label: 'AI Tips', icon: '🤖' },
           { key: 'challenges', label: 'Challenges', icon: '🎯' },
@@ -52,11 +54,17 @@ export default function MotivationScreen() {
         ].map((tab) => (
           <TouchableOpacity
             key={tab.key}
-            style={[styles.tabItem, activeTab === tab.key && styles.activeTab]}
+            style={[
+              styles.tabItem, 
+              { backgroundColor: activeTab === tab.key ? theme.primary : 'transparent' }
+            ]}
             onPress={() => setActiveTab(tab.key)}
           >
             <Text style={styles.tabIcon}>{tab.icon}</Text>
-            <Text style={[styles.tabLabel, activeTab === tab.key && styles.activeTabLabel]}>
+            <Text style={[
+              styles.tabLabel, 
+              { color: activeTab === tab.key ? '#fff' : theme.textSecondary }
+            ]}>
               {tab.label}
             </Text>
           </TouchableOpacity>
@@ -71,10 +79,8 @@ export default function MotivationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
   },
   header: {
-    backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
     paddingVertical: 20,
     borderBottomWidth: 1,
@@ -83,16 +89,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#212121',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
     paddingHorizontal: 5,
     paddingVertical: 10,
     borderBottomWidth: 1,
@@ -106,7 +109,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
   activeTab: {
-    backgroundColor: '#E8F5E8',
+    // backgroundColor will be handled by theme
   },
   tabIcon: {
     fontSize: 20,
@@ -114,11 +117,9 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontSize: 12,
-    color: '#666',
     fontWeight: '500',
   },
   activeTabLabel: {
-    color: '#4CAF50',
     fontWeight: 'bold',
   },
   content: {
@@ -131,16 +132,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#212121',
     marginBottom: 8,
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: '#666',
     marginBottom: 16,
   },
   card: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
@@ -165,28 +163,23 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#212121',
     marginBottom: 4,
   },
   cardDescription: {
     fontSize: 16,
-    color: '#666',
     lineHeight: 24,
     marginBottom: 16,
   },
   impactText: {
     fontSize: 14,
-    color: '#4CAF50',
     fontWeight: '600',
   },
   progressText: {
     fontSize: 14,
-    color: '#4CAF50',
     fontWeight: '500',
   },
   metaText: {
     fontSize: 12,
-    color: '#999',
   },
   progressBar: {
     height: 8,
@@ -197,10 +190,8 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#4CAF50',
   },
   actionButton: {
-    backgroundColor: '#4CAF50',
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
@@ -212,18 +203,15 @@ const styles = StyleSheet.create({
   },
   impactBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#E8F5E8',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
   },
   impactBadgeText: {
     fontSize: 14,
-    color: '#4CAF50',
     fontWeight: '600',
   },
   shareButton: {
-    backgroundColor: '#4CAF50',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',

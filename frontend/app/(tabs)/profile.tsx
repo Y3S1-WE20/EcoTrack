@@ -2,11 +2,41 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'expo-router';
+import EcoTrackLogo from '@/components/EcoTrackLogo';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 
 const ProfileScreen = () => {
   const { user, signOut, isAuthenticated } = useAuth();
+  const { theme, themeMode, toggleTheme } = useAppTheme();
   const router = useRouter();
+
+  const getThemeDisplayText = () => {
+    switch (themeMode) {
+      case 'light':
+        return 'Light Mode';
+      case 'dark':
+        return 'Dark Mode';
+      case 'system':
+        return 'System Default';
+      default:
+        return 'System Default';
+    }
+  };
+
+  const getThemeIcon = () => {
+    switch (themeMode) {
+      case 'light':
+        return 'sun.max.fill';
+      case 'dark':
+        return 'moon.fill';
+      case 'system':
+        return 'gearshape.fill';
+      default:
+        return 'gearshape.fill';
+    }
+  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -39,24 +69,25 @@ const ProfileScreen = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView style={styles.scrollView}>
         <View style={styles.content}>
-          {/* Profile Header */}
-          <View style={styles.profileHeader}>
+          {/* Profile Header with Logo */}
+          <View style={[styles.profileHeader, { backgroundColor: theme.surface }]}>
+            <EcoTrackLogo size="header" showText={true} style={styles.headerLogo} />
             <View style={styles.avatar}>
               {user.profileImage ? (
                 <Image source={{ uri: user.profileImage }} style={styles.profileImage} />
               ) : (
-                <Text style={styles.avatarText}>
+                <Text style={[styles.avatarText, { color: theme.text }]}>
                   {user.name.charAt(0).toUpperCase()}
                 </Text>
               )}
             </View>
-            <Text style={styles.name}>{user.name}</Text>
-            <Text style={styles.email}>{user.email}</Text>
+            <Text style={[styles.name, { color: theme.text }]}>{user.name}</Text>
+            <Text style={[styles.email, { color: theme.textSecondary }]}>{user.email}</Text>
             {user.completedOnboarding && (
-              <View style={styles.badge}>
+              <View style={[styles.badge, { backgroundColor: theme.primary }]}>
                 <Text style={styles.badgeText}>✓ Onboarded</Text>
               </View>
             )}
@@ -147,6 +178,31 @@ const ProfileScreen = () => {
               <Text style={styles.menuIcon}>⚙️</Text>
               <Text style={styles.menuText}>Settings</Text>
               <Text style={styles.menuArrow}>→</Text>
+            </TouchableOpacity>
+
+            {/* Theme Toggle */}
+            <TouchableOpacity 
+              style={[styles.menuItem, { backgroundColor: theme.surface }]}
+              onPress={toggleTheme}
+            >
+              <View style={styles.themeIconContainer}>
+                <IconSymbol 
+                  name={getThemeIcon()} 
+                  size={20} 
+                  color={theme.primary} 
+                />
+              </View>
+              <View style={styles.themeTextContainer}>
+                <Text style={[styles.menuText, { color: theme.text }]}>Appearance</Text>
+                <Text style={[styles.themeSubtext, { color: theme.textSecondary }]}>
+                  {getThemeDisplayText()}
+                </Text>
+              </View>
+              <IconSymbol 
+                name="chevron.right" 
+                size={16} 
+                color={theme.textTertiary} 
+              />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.logoutItem} onPress={handleLogout}>
@@ -316,6 +372,25 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     textAlign: 'center',
     fontWeight: '500',
+  },
+  headerLogo: {
+    marginBottom: 16,
+  },
+  themeIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+  },
+  themeTextContainer: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  themeSubtext: {
+    fontSize: 12,
+    marginTop: 2,
   },
 });
 

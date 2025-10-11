@@ -7,6 +7,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { HabitLog, habitAPI } from '../services/habitAPI';
 
 interface ActivityListProps {
@@ -16,6 +17,7 @@ interface ActivityListProps {
 
 const ActivityList: React.FC<ActivityListProps> = ({ activities, onRefresh }) => {
   const [activeTab, setActiveTab] = useState<'today' | 'history'>('today');
+  const { theme } = useAppTheme();
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -83,27 +85,39 @@ const ActivityList: React.FC<ActivityListProps> = ({ activities, onRefresh }) =>
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Tab Header */}
-      <View style={styles.tabContainer}>
+      <View style={[styles.tabContainer, { backgroundColor: theme.surface }]}>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'today' && styles.activeTab]}
+          style={[
+            styles.tab, 
+            { backgroundColor: activeTab === 'today' ? theme.primary : 'transparent' }
+          ]}
           onPress={() => setActiveTab('today')}
         >
           <Text style={styles.tabIcon}>📅</Text>
           <Text
-            style={[styles.tabText, activeTab === 'today' && styles.activeTabText]}
+            style={[
+              styles.tabText, 
+              { color: activeTab === 'today' ? '#fff' : theme.textSecondary }
+            ]}
           >
             Today's Activities
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'history' && styles.activeTab]}
+          style={[
+            styles.tab, 
+            { backgroundColor: activeTab === 'history' ? theme.primary : 'transparent' }
+          ]}
           onPress={() => setActiveTab('history')}
         >
           <Text style={styles.tabIcon}>📈</Text>
           <Text
-            style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}
+            style={[
+              styles.tabText, 
+              { color: activeTab === 'history' ? '#fff' : theme.textSecondary }
+            ]}
           >
             History
           </Text>
