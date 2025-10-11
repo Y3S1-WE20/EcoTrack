@@ -16,7 +16,7 @@ import {
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-import { Audio } from 'expo-av';
+import { useAudioRecorder, useAudioPlayer } from 'expo-audio';
 
 interface Attachment {
   id: string;
@@ -41,8 +41,10 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
   const [inputText, setInputText] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [isRecording, setIsRecording] = useState(false); // Keep for UI state
+  // Temporarily disable audio recording
+  // const audioRecorder = useAudioRecorder();
+  // const audioPlayer = useAudioPlayer();
 
   const handleSend = () => {
     const trimmedText = inputText.trim();
@@ -160,60 +162,13 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
     setShowAttachmentMenu(false);
   };
 
+  // TODO: Migrate to expo-audio
   const startRecording = async () => {
-    try {
-      const permission = await Audio.requestPermissionsAsync();
-      
-      if (permission.status !== 'granted') {
-        Alert.alert('Permission Required', 'Permission to access microphone is required!');
-        return;
-      }
-
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      
-      setRecording(recording);
-      setIsRecording(true);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to start recording');
-      console.error('Recording error:', error);
-    }
+    Alert.alert('Coming Soon', 'Voice message feature is being updated. Please use text or attachments for now.');
   };
 
   const stopRecording = async () => {
-    if (!recording) return;
-
-    try {
-      setIsRecording(false);
-      await recording.stopAndUnloadAsync();
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-      });
-      
-      const uri = recording.getURI();
-      if (uri) {
-        const attachment: Attachment = {
-          id: Date.now().toString(),
-          type: 'voice',
-          uri: uri,
-          name: 'voice-message.m4a',
-          mimeType: 'audio/m4a',
-        };
-        setAttachments(prev => [...prev, attachment]);
-      }
-      
-      setRecording(null);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to stop recording');
-      console.error('Stop recording error:', error);
-    }
-    setShowAttachmentMenu(false);
+    // Disabled for now
   };
 
   const removeAttachment = (id: string) => {
@@ -347,10 +302,11 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
               <Text style={styles.menuItemText}>Document</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.menuItem} onPress={startRecording}>
+            {/* Temporarily disabled while migrating to expo-audio */}
+            {/* <TouchableOpacity style={styles.menuItem} onPress={startRecording}>
               <IconSymbol name="mic" size={24} color="#4CAF50" />
               <Text style={styles.menuItemText}>Voice Message</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </TouchableOpacity>
       </Modal>

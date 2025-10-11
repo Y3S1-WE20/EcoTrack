@@ -8,7 +8,7 @@ import {
   Alert,
   ActivityIndicator 
 } from 'react-native';
-import { Audio } from 'expo-av';
+import { useAudioPlayer } from 'expo-audio';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 
 interface Attachment {
@@ -42,52 +42,17 @@ interface EnhancedMessageBubbleProps {
 }
 
 const EnhancedMessageBubble: React.FC<EnhancedMessageBubbleProps> = ({ message }) => {
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    return sound
-      ? () => {
-          sound.unloadAsync();
-        }
-      : undefined;
-  }, [sound]);
+  // Temporarily disable audio while migrating to expo-audio
+  // const [currentAudioUri, setCurrentAudioUri] = useState<string | null>(null);
+  // const player = useAudioPlayer(currentAudioUri || '');
 
   const playVoiceMessage = async (uri: string) => {
-    try {
-      setIsLoading(true);
-      
-      if (sound) {
-        await sound.unloadAsync();
-      }
-
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri },
-        { shouldPlay: true }
-      );
-      
-      setSound(newSound);
-      setIsPlaying(true);
-      
-      newSound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && status.didJustFinish) {
-          setIsPlaying(false);
-        }
-      });
-    } catch (error) {
-      Alert.alert('Error', 'Failed to play voice message');
-      console.error('Audio playback error:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    Alert.alert('Coming Soon', 'Voice message playback is being updated. Feature will be available soon.');
   };
 
-  const stopVoiceMessage = async () => {
-    if (sound) {
-      await sound.stopAsync();
-      setIsPlaying(false);
-    }
+  const stopVoiceMessage = () => {
+    // Temporarily disabled
   };
 
   const openDocument = (attachment: Attachment) => {
@@ -117,7 +82,7 @@ const EnhancedMessageBubble: React.FC<EnhancedMessageBubbleProps> = ({ message }
           <TouchableOpacity
             key={attachment.id}
             style={styles.voiceMessage}
-            onPress={() => isPlaying ? stopVoiceMessage() : playVoiceMessage(attachment.uri)}
+            onPress={() => playVoiceMessage(attachment.uri)}
             disabled={isLoading}
           >
             <View style={styles.voiceButton}>
@@ -125,14 +90,14 @@ const EnhancedMessageBubble: React.FC<EnhancedMessageBubbleProps> = ({ message }
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <IconSymbol 
-                  name={isPlaying ? "pause.fill" : "play.fill"} 
+                  name="play.fill" 
                   size={16} 
                   color="#FFFFFF" 
                 />
               )}
             </View>
             <Text style={styles.voiceText}>
-              {isLoading ? 'Loading...' : isPlaying ? 'Playing...' : 'Voice Message'}
+              {isLoading ? 'Loading...' : 'Voice Message'}
             </Text>
           </TouchableOpacity>
         );
