@@ -14,6 +14,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import EnhancedMessageBubble, { EnhancedMessage } from '@/components/chat/EnhancedMessageBubble';
 import EnhancedChatInput from '@/components/chat/EnhancedChatInput';
+import EcoTrackLogo from '@/components/EcoTrackLogo';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import chatAPI, { ChatResponse } from '@/services/chatAPI';
 import clearAllStoredData from '@/utils/clearStorage';
 
@@ -22,6 +24,7 @@ const AssistantScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [userToken, setUserToken] = useState<string | null>(null);
   const flatListRef = useRef<FlatList>(null);
+  const { theme } = useAppTheme();
 
   useEffect(() => {
     initializeChat();
@@ -155,20 +158,23 @@ const AssistantScreen = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
         <View style={styles.headerContent}>
-          <View>
-            <Text style={styles.title}>💬 EcoTrack Assistant</Text>
-            <Text style={styles.subtitle}>
-              Log activities and get personalized eco tips
-            </Text>
+          <View style={styles.headerInfo}>
+            <EcoTrackLogo size="header" showText={false} />
+            <View style={styles.headerText}>
+              <Text style={[styles.title, { color: theme.text }]}>AI Assistant</Text>
+              <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+                Multilingual eco tracking & tips
+              </Text>
+            </View>
           </View>
           <TouchableOpacity 
-            style={styles.resetButton} 
+            style={[styles.resetButton, { backgroundColor: theme.error + '20', borderColor: theme.error }]} 
             onPress={handleClearData}
           >
-            <Text style={styles.resetButtonText}>🧹 Reset</Text>
+            <Text style={[styles.resetButtonText, { color: theme.error }]}>🧹 Reset</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -204,41 +210,40 @@ const AssistantScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
   },
   header: {
     padding: 20,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
   },
   headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  headerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerText: {
+    marginLeft: 12,
+  },
   resetButton: {
-    backgroundColor: '#4CAF50',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#66BB6A',
   },
   resetButtonText: {
-    color: '#fff',
     fontSize: 12,
     fontWeight: '600',
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#212121',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 12,
   },
   messagesList: {
     flex: 1,

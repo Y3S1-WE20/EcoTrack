@@ -2,12 +2,15 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useAppTheme } from '@/contexts/ThemeContext';
 
 interface CustomTabBarProps extends BottomTabBarProps {}
 
 const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, descriptors, navigation }) => {
+  const { theme } = useAppTheme();
+  
   const getTabIcon = (routeName: string, isFocused: boolean) => {
-    const color = isFocused ? '#FFFFFF' : '#9CA3AF';
+    const color = isFocused ? '#FFFFFF' : theme.tabBarInactive;
     const size = 24;
     
     switch (routeName) {
@@ -40,7 +43,7 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, descriptors, navigat
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.tabBar }]}>
       {state.routes
         .filter(route => !['index', 'explore'].includes(route.name)) // Filter out index and explore tabs
         .map((route, index) => {
@@ -81,17 +84,18 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, descriptors, navigat
           >
             {/* Modern indicator dot for current tab */}
             {isFocused && (
-              <View style={styles.activeIndicator} />
+              <View style={[styles.activeIndicator, { backgroundColor: theme.primary }]} />
             )}
             <View style={[
               styles.tabIconContainer,
-              isFocused && styles.tabIconContainerFocused
+              isFocused && [styles.tabIconContainerFocused, { backgroundColor: theme.primary }]
             ]}>
               {icon}
             </View>
             <Text style={[
               styles.tabLabel,
-              isFocused && styles.tabLabelFocused
+              { color: theme.tabBarInactive },
+              isFocused && [styles.tabLabelFocused, { color: theme.primary }]
             ]}>
               {label}
             </Text>
@@ -105,7 +109,6 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, descriptors, navigat
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
     borderTopWidth: 0, // Remove border for cleaner look
     paddingBottom: 25, // More space for safe area
     paddingTop: 12,
@@ -128,7 +131,6 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#000000',
   },
   tabIconContainer: {
     width: 48,
@@ -140,17 +142,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   tabIconContainerFocused: {
-    backgroundColor: '#000000', // Dark circular background for active tab
     transform: [{ scale: 1.1 }], // Slightly larger when active
   },
   tabLabel: {
     fontSize: 11,
-    color: '#9CA3AF',
     fontWeight: '500',
     textAlign: 'center',
   },
   tabLabelFocused: {
-    color: '#000000',
     fontWeight: '600',
   },
 });
