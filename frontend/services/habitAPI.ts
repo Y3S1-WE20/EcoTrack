@@ -2,31 +2,9 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { authService } from './authAPI';
+import { apiConfig } from './apiConfig';
 
-/**
- * Determine API base URL with fallbacks ordered by most reliable in dev:
- * 1. Explicit environment variable (process.env.API_URL)
- * 2. Expo debugger host (when running in Expo/Expo Go)
- * 3. Android emulator loopback (10.0.2.2)
- * 4. Default local LAN IP fallback used previously
- *
- * This reduces "Network request failed" errors when running on emulators,
- * physical devices, or web. It also logs the chosen URL to help debugging.
- */
-const getBaseURL = () => {
-  // Web (local development)
-  if (Platform.OS === 'web') {
-    return 'http://localhost:4000/api/v1';
-  }
-
-  // First try localhost. This allows `adb reverse tcp:4000 tcp:4000` to work
-  // even when the device is on mobile data or a different network.
-  const localhostUrl = 'http://localhost:4000/api/v1';
-  console.log('[HabitAPI] trying localhost URL (for adb reverse):', localhostUrl);
-  return localhostUrl;
-};
-
-const API_BASE_URL = getBaseURL();
+console.log('[HabitAPI] Initializing with smart URL fallback');
 
 export interface Category {
   _id: string;
@@ -79,28 +57,75 @@ export interface ApiResponse<T> {
 }
 
 class HabitAPI {
+  // Helper function to try multiple URLs until one works
+  private async tryRequest<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<Response> {
+    const token = await authService.getToken();
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...options.headers as Record<string, string>,
+    };
+
+    // Add authorization header if token exists
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const requestOptions = {
+      ...options,
+      headers,
+    };
+
+    // Get URLs in smart order (cached working URL first)
+    const orderedUrls = await apiConfig.getOrderedUrls();
+
+    for (const baseUrl of orderedUrls) {
+      try {
+        const url = `${baseUrl}${endpoint}`;
+        console.log(`[HabitAPI] Trying: ${url}`);
+        
+        // Add faster timeout for quicker fallback
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), apiConfig.getTimeout());
+        
+        try {
+          const response = await fetch(url, {
+            ...requestOptions,
+            signal: controller.signal,
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (response.ok) {
+            console.log(`[HabitAPI] Success with: ${baseUrl}`);
+            // Cache this working URL for faster future requests
+            await apiConfig.setWorkingUrl(baseUrl);
+            return response;
+          } else {
+            console.log(`[HabitAPI] Failed with ${baseUrl}: HTTP ${response.status}`);
+          }
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          throw fetchError;
+        }
+      } catch (error) {
+        console.log(`[HabitAPI] Failed with ${baseUrl}:`, error);
+        // Continue to next URL
+      }
+    }
+
+    throw new Error('All API endpoints failed');
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     try {
-      const token = await authService.getToken();
-      
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        ...options.headers as Record<string, string>,
-      };
-
-      // Add authorization header if token exists
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        ...options,
-        headers,
-      });
-
+      const response = await this.tryRequest(endpoint, options);
       const data = await response.json();
 
       if (!response.ok) {

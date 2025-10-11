@@ -46,28 +46,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       if (isAuth) {
         // Try to get fresh user data from server
-        const response = await authService.getCurrentUser();
-        if (response.success && response.data) {
-          setUser(response.data.user);
-        } else {
-          // If server request fails, get cached user data
-          const cachedUser = await authService.getUser();
-          if (cachedUser) {
-            setUser(cachedUser);
+        try {
+          const response = await authService.getCurrentUser();
+          if (response.success && response.data) {
+            setUser(response.data.user);
           } else {
-            // No valid authentication, clear everything
+            // Server request failed, likely invalid token
+            console.log('[AuthContext] Server auth failed, clearing credentials');
             await authService.logout();
             setUser(null);
           }
+        } catch (authError) {
+          // Network or auth error, clear credentials and start fresh
+          console.log('[AuthContext] Auth error, clearing credentials:', authError);
+          await authService.logout();
+          setUser(null);
         }
       } else {
         setUser(null);
       }
     } catch (error) {
       console.error('Auth check error:', error);
-      // On error, try to get cached user data
-      const cachedUser = await authService.getUser();
-      setUser(cachedUser);
+      // On any error, clear everything and start fresh
+      await authService.logout();
+      setUser(null);
     } finally {
       setIsLoading(false);
     }

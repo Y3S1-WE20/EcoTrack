@@ -19,27 +19,44 @@ export default function TabLayout() {
         headerShown: false,
         tabBarButton: HapticTab,
       }}>
+      
+      {/* Home/Habits page should be first */}
       <Tabs.Screen
         name="habits"
         options={{
-          title: 'Habits',
+          title: 'Home',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
         }}
       />
+      
+      {/* Phase 2: Carbon Footprint Chatbot */}
       <Tabs.Screen
         name="assistant"
         options={{
-          title: 'Assistant',
+          title: 'AI Assistant',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="message.fill" color={color} />,
         }}
       />
+      
+      {/* Goals page */}
       <Tabs.Screen
         name="goals"
         options={{
           title: 'Goals',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chart.bar.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="flag.fill" color={color} />,
         }}
       />
+      
+      {/* Explore page */}
+      <Tabs.Screen
+        name="explore"
+        options={{
+          title: 'Explore',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="safari.fill" color={color} />,
+        }}
+      />
+      
+      {/* Profile for onboarding */}
       <Tabs.Screen
         name="profile"
         options={{
@@ -47,14 +64,18 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
         }}
       />
+      
+      {/* Phase 4: Motivation Hub - accessible from Profile */}
       <Tabs.Screen
-        name="index"
+        name="motivation"
         options={{
-          href: null, // Hide this tab
+          href: null, // Hide from tabs - will be accessed from Profile page
         }}
       />
+      
+      {/* Hide default index */}
       <Tabs.Screen
-        name="explore"
+        name="index"
         options={{
           href: null, // Hide this tab
         }}

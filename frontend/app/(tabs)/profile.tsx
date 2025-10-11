@@ -1,10 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'expo-router';
 
 const ProfileScreen = () => {
   const { user, signOut, isAuthenticated } = useAuth();
+  const router = useRouter();
 
   const handleLogout = () => {
     Alert.alert(
@@ -43,9 +45,13 @@ const ProfileScreen = () => {
           {/* Profile Header */}
           <View style={styles.profileHeader}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {user.name.charAt(0).toUpperCase()}
-              </Text>
+              {user.profileImage ? (
+                <Image source={{ uri: user.profileImage }} style={styles.profileImage} />
+              ) : (
+                <Text style={styles.avatarText}>
+                  {user.name.charAt(0).toUpperCase()}
+                </Text>
+              )}
             </View>
             <Text style={styles.name}>{user.name}</Text>
             <Text style={styles.email}>{user.email}</Text>
@@ -80,37 +86,64 @@ const ProfileScreen = () => {
 
           {/* Menu Items */}
           <View style={styles.menuSection}>
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => router.push('/carbon-report')}
+            >
               <Text style={styles.menuIcon}>📊</Text>
               <Text style={styles.menuText}>Carbon Footprint Report</Text>
               <Text style={styles.menuArrow}>→</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => router.push('/personal-goals')}
+            >
               <Text style={styles.menuIcon}>🎯</Text>
               <Text style={styles.menuText}>Personal Goals</Text>
               <Text style={styles.menuArrow}>→</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => router.push('/motivation')}
+            >
+              <Text style={styles.menuIcon}>⭐</Text>
+              <Text style={styles.menuText}>Motivation Hub</Text>
+              <Text style={styles.menuArrow}>→</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => router.push('/notifications')}
+            >
               <Text style={styles.menuIcon}>🔔</Text>
               <Text style={styles.menuText}>Notifications</Text>
               <Text style={styles.menuArrow}>→</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => router.push('/carbon-offset-program')}
+            >
               <Text style={styles.menuIcon}>🌍</Text>
               <Text style={styles.menuText}>Carbon Offset Programs</Text>
               <Text style={styles.menuArrow}>→</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => router.push('/learn-sustainability')}
+            >
               <Text style={styles.menuIcon}>📚</Text>
               <Text style={styles.menuText}>Learn About Sustainability</Text>
               <Text style={styles.menuArrow}>→</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => router.push('/settings')}
+            >
               <Text style={styles.menuIcon}>⚙️</Text>
               <Text style={styles.menuText}>Settings</Text>
               <Text style={styles.menuArrow}>→</Text>
@@ -159,6 +192,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+  },
+  profileImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
   },
   avatarText: {
     fontSize: 32,

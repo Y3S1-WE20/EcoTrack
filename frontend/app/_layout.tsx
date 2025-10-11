@@ -22,6 +22,19 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="auth" options={{ headerShown: false }} />
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+            <Stack.Screen name="carbon-report" options={{ headerShown: false }} />
+            <Stack.Screen name="personal-goals" options={{ headerShown: false }} />
+            <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
+            <Stack.Screen name="notifications" options={{ headerShown: false }} />
+            <Stack.Screen name="privacy-security" options={{ headerShown: false }} />
+            <Stack.Screen name="export-data" options={{ headerShown: false }} />
+            <Stack.Screen name="help-support" options={{ headerShown: false }} />
+            <Stack.Screen name="send-feedback" options={{ headerShown: false }} />
+            <Stack.Screen name="terms-of-service" options={{ headerShown: false }} />
+            <Stack.Screen name="privacy-policy" options={{ headerShown: false }} />
+            <Stack.Screen name="carbon-offset-program" options={{ headerShown: false }} />
+            <Stack.Screen name="learn-sustainability" options={{ headerShown: false }} />
+            <Stack.Screen name="settings" options={{ headerShown: false }} />
           </Stack>
         </AuthGuard>
         <StatusBar style="auto" />

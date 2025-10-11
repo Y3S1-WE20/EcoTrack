@@ -1,20 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
+import { apiConfig } from './apiConfig';
 
-const getBaseURL = () => {
-  // Web (local development)
-  if (Platform.OS === 'web') {
-    return 'http://localhost:4000/api/v1';
-  }
+/**
+ * Authentication service with intelligent URL fallback and caching
+ */
 
-  // First try localhost for adb reverse
-  const localhostUrl = 'http://localhost:4000/api/v1';
-  console.log('[AuthAPI] using localhost URL (for adb reverse):', localhostUrl);
-  return localhostUrl;
-};
-
-const API_BASE_URL = getBaseURL();
 const TOKEN_KEY = 'ecotrack_auth_token';
 const USER_KEY = 'ecotrack_user_data';
 
@@ -22,6 +13,9 @@ export interface User {
   _id: string;
   name: string;
   email: string;
+  profileImage?: string;
+  phone?: string;
+  bio?: string;
   completedOnboarding: boolean;
   carbonProfile?: {
     lifestyle: string;
@@ -59,10 +53,7 @@ export interface RegisterData {
 }
 
 class AuthService {
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  private async tryRequest<T>(url: string, endpoint: string, options: RequestInit = {}): Promise<T> {
     const token = await this.getToken();
     
     const headers: Record<string, string> = {
@@ -75,12 +66,20 @@ class AuthService {
       headers.Authorization = `Bearer ${token}`;
     }
 
+    console.log(`[AuthAPI] Trying: ${url}${endpoint}`);
+    
+    // Add faster timeout for quicker fallback
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), apiConfig.getTimeout());
+    
     try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      const response = await fetch(`${url}${endpoint}`, {
         ...options,
         headers,
+        signal: controller.signal,
       });
 
+      clearTimeout(timeoutId);
       const data = await response.json();
 
       // If server indicates unauthorized, clear local credentials so user is forced to re-authenticate
@@ -101,22 +100,49 @@ class AuthService {
 
       return data;
     } catch (error) {
-      console.error('Auth API request failed:', error);
-      
-      // Provide more specific error messages
-      let errorMessage = 'Unknown error';
-      if (error instanceof Error) {
-        if (error.message.includes('Network request failed')) {
-          errorMessage = 'Cannot connect to server. Please check your internet connection and try again.';
-        } else if (error.message.includes('timeout')) {
-          errorMessage = 'Request timed out. Please try again.';
-        } else {
-          errorMessage = error.message;
-        }
-      }
-      
-      throw new Error(errorMessage);
+      clearTimeout(timeoutId);
+      throw error;
     }
+  }
+
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> {
+    let lastError: Error | null = null;
+    
+    // On web, just use localhost
+    if (Platform.OS === 'web') {
+      return this.tryRequest('http://localhost:4000/api/v1', endpoint, options);
+    }
+
+    // On mobile, try URLs in smart order (cached working URL first)
+    const orderedUrls = await apiConfig.getOrderedUrls();
+    console.log('[AuthAPI] Will try URLs in order:', orderedUrls);
+    
+    for (const baseUrl of orderedUrls) {
+      try {
+        const result = await this.tryRequest<T>(baseUrl, endpoint, options);
+        console.log(`[AuthAPI] Success with: ${baseUrl}`);
+        
+        // Cache this working URL for faster future requests
+        await apiConfig.setWorkingUrl(baseUrl);
+        
+        return result;
+      } catch (error) {
+        console.log(`[AuthAPI] Failed with ${baseUrl}:`, error);
+        lastError = error instanceof Error ? error : new Error('Unknown error');
+        continue;
+      }
+    }
+
+    // If all URLs failed, provide helpful error message
+    const errorMessage = lastError?.message || 'Unknown error';
+    if (errorMessage.includes('Network request failed') || errorMessage.includes('fetch')) {
+      throw new Error('Cannot connect to server. Please ensure the backend is running and check your network connection.\n\nTroubleshooting:\n1. Make sure the backend server is running\n2. Try: adb reverse tcp:4000 tcp:4000\n3. Check your WiFi connection');
+    }
+    
+    throw lastError || new Error('All connection attempts failed');
   }
 
   // Token management

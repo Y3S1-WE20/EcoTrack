@@ -17,6 +17,8 @@ const { connectDB, seedInitialData } = require('./config/database');
 const habitRoutes = require('./routes/habitRoutes');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
+// const chatRoutes = require('./routes/chatRoutes'); // Old complex chat
+const simpleChatRoutes = require('./routes/simpleChatRoutes'); // New simple chat
 const config = require('./config/config');
 
 const app = express();
@@ -33,6 +35,7 @@ const PORT = config.PORT;
 app.use(`${config.API_PREFIX}/auth`, authRoutes);
 app.use(`${config.API_PREFIX}/habits`, habitRoutes);
 app.use(`${config.API_PREFIX}/profile`, profileRoutes);
+app.use(`${config.API_PREFIX}/chat`, simpleChatRoutes); // Using new simple chat
 
 // Health check routes
 app.get('/', (req, res) => {
@@ -80,8 +83,9 @@ const startServer = async () => {
 		console.log('✅ Initial data seeded');
 
 		// Start server
-		const server = app.listen(PORT, () => {
+		const server = app.listen(PORT, '0.0.0.0', () => {
 			console.log(`🚀 EcoTrack backend listening on http://localhost:${PORT}`);
+			console.log(`🌐 Also accessible at http://0.0.0.0:${PORT} for mobile devices`);
 			console.log(`📚 API Documentation: http://localhost:${PORT}${config.API_PREFIX}`);
 		});
 
