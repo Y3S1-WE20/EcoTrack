@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import * as ImagePicker from 'expo-image-picker';
+import { profileAPI } from '@/services/profileAPI';
 
 const EditProfileScreen = () => {
   const router = useRouter();
@@ -33,6 +34,7 @@ const EditProfileScreen = () => {
   });
   
   const [showPasswordSection, setShowPasswordSection] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const goBack = () => {
     router.back();
@@ -107,24 +109,41 @@ const EditProfileScreen = () => {
     );
   };
 
-  const saveProfile = () => {
+  const saveProfile = async () => {
     if (!profileData.name.trim()) {
       Alert.alert('Error', 'Name is required');
       return;
     }
     
-    // Update user data in context and local storage
-    updateUser({
-      name: profileData.name,
-      email: profileData.email,
-      phone: profileData.phone,
-      bio: profileData.bio,
-      profileImage: profileData.profileImage,
-    });
-    
-    Alert.alert('Success', 'Profile updated successfully!', [
-      { text: 'OK', onPress: () => router.back() }
-    ]);
+    try {
+      setSaving(true);
+      
+      // Call API to update profile in database
+      const response = await profileAPI.updateProfile({
+        name: profileData.name,
+        email: profileData.email,
+        phone: profileData.phone,
+        bio: profileData.bio,
+        profileImage: profileData.profileImage || undefined,
+      });
+
+      if (response.success) {
+        // Update local context with the response data
+        updateUser(response.data.user);
+        
+        Alert.alert('Success', 'Profile updated successfully!', [
+          { text: 'OK', onPress: () => router.back() }
+        ]);
+      } else {
+        Alert.alert('Error', response.message || 'Failed to update profile');
+      }
+      
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      Alert.alert('Error', 'Failed to update profile. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const changePassword = () => {
@@ -160,8 +179,14 @@ const EditProfileScreen = () => {
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Edit Profile</Text>
-        <TouchableOpacity onPress={saveProfile} style={styles.saveButton}>
-          <Text style={styles.saveText}>Save</Text>
+        <TouchableOpacity 
+          onPress={saveProfile} 
+          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+          disabled={saving}
+        >
+          <Text style={styles.saveText}>
+            {saving ? 'Saving...' : 'Save'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -335,6 +360,9 @@ const styles = StyleSheet.create({
   saveButton: {
     flex: 1,
     alignItems: 'flex-end',
+  },
+  saveButtonDisabled: {
+    opacity: 0.5,
   },
   saveText: {
     fontSize: 16,

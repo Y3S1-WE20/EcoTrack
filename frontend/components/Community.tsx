@@ -36,6 +36,9 @@ export default function Community({ onRefresh, refreshing = false }: CommunityPr
   const [hasMore, setHasMore] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [currentUserId, setCurrentUserId] = useState<string>('demo-user');
+  const [showCommentModal, setShowCommentModal] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState<string>('');
+  const [newComment, setNewComment] = useState('');
 
   useEffect(() => {
     loadCurrentUser();
@@ -165,6 +168,43 @@ export default function Community({ onRefresh, refreshing = false }: CommunityPr
     }
   };
 
+  const handleCommentPress = (postId: string) => {
+    setSelectedPostId(postId);
+    setShowCommentModal(true);
+  };
+
+  const handleAddComment = async () => {
+    if (!newComment.trim()) {
+      Alert.alert('Error', 'Please enter a comment');
+      return;
+    }
+
+    try {
+      const authorName = currentUser?.name || 'Demo User';
+      const response = await addComment(selectedPostId, newComment.trim(), authorName);
+      
+      if (response.success) {
+        // Update the post with the new comment
+        setPosts(prev =>
+          prev.map(post =>
+            post._id === selectedPostId
+              ? {
+                  ...post,
+                  comments: [...(post.comments || []), response.comment]
+                }
+              : post
+          )
+        );
+        setNewComment('');
+        setShowCommentModal(false);
+        Alert.alert('Success', 'Comment added successfully!');
+      }
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      Alert.alert('Error', 'Failed to add comment');
+    }
+  };
+
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -272,7 +312,10 @@ export default function Community({ onRefresh, refreshing = false }: CommunityPr
                       <Text style={styles.actionText}>{post.likes.length}</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.actionButton}>
+                    <TouchableOpacity 
+                      style={styles.actionButton}
+                      onPress={() => handleCommentPress(post._id)}
+                    >
                       <Text style={styles.actionIcon}>💬</Text>
                       <Text style={styles.actionText}>{post.comments?.length || 0}</Text>
                     </TouchableOpacity>
@@ -359,6 +402,42 @@ export default function Community({ onRefresh, refreshing = false }: CommunityPr
               <Text style={styles.tipItem}>• Offer encouragement to others</Text>
             </View>
           </ScrollView>
+        </View>
+      </Modal>
+
+      {/* Comment Modal */}
+      <Modal
+        visible={showCommentModal}
+        transparent={true}
+        animationType="slide"
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity
+              onPress={() => setShowCommentModal(false)}
+              style={styles.closeButton}
+            >
+              <Text style={styles.closeButtonText}>✕</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Add Comment</Text>
+            <TouchableOpacity
+              onPress={handleAddComment}
+              style={styles.postButton}
+            >
+              <Text style={styles.postButtonText}>Post</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.modalContent}>
+            <TextInput
+              style={styles.commentInput}
+              placeholder="Write your comment..."
+              multiline
+              value={newComment}
+              onChangeText={setNewComment}
+              autoFocus
+            />
+          </View>
         </View>
       </Modal>
     </>
@@ -644,5 +723,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#4CAF50',
     marginBottom: 4,
+  },
+  commentInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    minHeight: 80,
+    textAlignVertical: 'top',
   },
 });
