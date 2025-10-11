@@ -158,6 +158,95 @@ Respond as EcoTrack AI Assistant:`;
     }
   }
 
+  async chatWithContext(userMessage, context = {}) {
+    if (!this.isReady()) {
+      return {
+        success: false,
+        message: context.language === 'si' 
+          ? 'EcoTrack AI සහායකයා දැනට ක්‍රියා නොකරයි.' 
+          : 'EcoTrack AI Assistant is currently offline.',
+        type: 'error',
+        aiEnhanced: false,
+        needsAuth: false
+      };
+    }
+
+    try {
+      const { systemPrompt, language = 'en', hasAttachments = false } = context;
+      
+      let prompt = systemPrompt || `You are EcoTrack AI Assistant - a friendly environmental companion.`;
+      
+      // Add attachment context if present
+      if (hasAttachments) {
+        prompt += `\n\nNote: The user has shared attachments (images, documents, or voice messages) along with their message. Please acknowledge them appropriately in your response.`;
+      }
+      
+      // Add language-specific instructions
+      if (language === 'si') {
+        prompt += `\n\nIMPORTANT: Respond ONLY in Sinhala language (සිංහල). Use proper Sinhala grammar and vocabulary.`;
+      }
+      
+      prompt += `\n\nUser message: "${userMessage}"`;
+      
+      if (language === 'si') {
+        prompt += `\n\nRespond in Sinhala (සිංහල භාෂාවෙන් පිළිතුරු දෙන්න):`;
+      } else {
+        prompt += `\n\nRespond as EcoTrack AI Assistant:`;
+      }
+
+      console.log('🤖 Sending to Gemini AI with context...');
+      console.log('Language:', language);
+      console.log('Has attachments:', hasAttachments);
+      
+      const result = await this.model.generateContent(prompt);
+      const aiResponse = result.response.text().trim();
+      
+      console.log('✅ AI Response with context:', aiResponse);
+
+      return {
+        success: true,
+        message: aiResponse,
+        type: 'conversation',
+        aiEnhanced: true,
+        needsAuth: false,
+        language: language
+      };
+
+    } catch (error) {
+      console.error('❌ AI Chat with Context Error:', error.message);
+      
+      // Provide helpful fallback responses based on language
+      let fallbackMessage = "";
+      
+      if (context.language === 'si') {
+        fallbackMessage = "සුභ දිනයක්! 🌱 මම EcoTrack AI සහායකයා! " +
+          "දැනට මම ටිකක් අපහසුතාවයක් අත්වින්දිනවා, නමුත් මෙන්න සරල පරිසර උපදෙස් කිහිපයක්:\n" +
+          "🌿 සාප්පු යන විට නැවත භාවිත කළ හැකි බෑග් යොදන්න\n" +
+          "💧 අවශ්‍ය නොවන විට ජල කරන්ට වසන්න\n" +
+          "🚲 කෙටි ගමන් සඳහා ඇවිද යන්න හෝ බයිසිකලයෙන් යන්න\n" +
+          "♻️ කපන්න හා කොම්පෝස්ට් කරන්න\n\n" +
+          "සෑම කුඩා ක්‍රියාවක්ම වැදගත්! පසුව නැවත උත්සාහ කරන්න.";
+      } else {
+        fallbackMessage = "Hi! I'm EcoTrack AI Assistant! 🌱 " +
+          "I'm experiencing some difficulty right now, but here are quick eco tips:\n" +
+          "🌿 Use reusable bags when shopping\n" +
+          "💧 Turn off taps when not needed\n" +
+          "🚲 Walk or bike for short trips\n" +
+          "♻️ Recycle and compost when possible\n\n" +
+          "Every small action matters! Try again later for personalized advice.";
+      }
+      
+      return {
+        success: true,
+        message: fallbackMessage,
+        type: 'conversation',
+        aiEnhanced: false,
+        needsAuth: false,
+        language: context.language || 'en'
+      };
+    }
+  }
+
   getStatus() {
     return {
       hasApiKey: !!this.apiKey,

@@ -26,6 +26,7 @@ export interface ChatResponse {
   suggestion?: string;
   habitLogId?: string;
   success: boolean;
+  language?: string;
 }
 
 class ChatAPI {
@@ -148,6 +149,18 @@ Troubleshooting:
       method: 'POST',
       headers,
       body: JSON.stringify({ message }),
+    });
+  }
+
+  async sendEnhancedMessage(message: string, attachments?: any[]): Promise<ChatResponse> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    return this.request('/chat/enhanced', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ message, attachments }),
     });
   }
 

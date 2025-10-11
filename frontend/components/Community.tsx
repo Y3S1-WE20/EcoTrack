@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
   TextInput,
   Modal,
+  Share,
+  Clipboard,
 } from 'react-native';
 import {
   getCommunityPosts,
@@ -205,6 +207,41 @@ export default function Community({ onRefresh, refreshing = false }: CommunityPr
     }
   };
 
+  const handleSharePost = async (post: CommunityPost) => {
+    try {
+      // Create shareable content
+      const shareContent = {
+        title: 'Check out this eco-friendly post from EcoTrack!',
+        message: `${post.author} shared: "${post.content.slice(0, 100)}${post.content.length > 100 ? '...' : ''}"
+        
+Join the EcoTrack community and share your environmental journey!`,
+        url: 'https://ecotrack.app' // You can add specific post URL when implemented
+      };
+
+      // Try native sharing first
+      try {
+        const result = await Share.share({
+          title: shareContent.title,
+          message: shareContent.message,
+        });
+
+        if (result.action === Share.sharedAction) {
+          console.log('Post shared successfully');
+        } else if (result.action === Share.dismissedAction) {
+          console.log('Share dismissed');
+        }
+      } catch (shareError) {
+        // Fallback to copy to clipboard
+        console.log('Native share failed, copying to clipboard');
+        await Clipboard.setString(shareContent.message);
+        Alert.alert('Copied to Clipboard', 'Post content has been copied to your clipboard!');
+      }
+    } catch (error) {
+      console.error('Error sharing post:', error);
+      Alert.alert('Error', 'Failed to share post');
+    }
+  };
+
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -320,7 +357,10 @@ export default function Community({ onRefresh, refreshing = false }: CommunityPr
                       <Text style={styles.actionText}>{post.comments?.length || 0}</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.actionButton}>
+                    <TouchableOpacity 
+                      style={styles.actionButton}
+                      onPress={() => handleSharePost(post)}
+                    >
                       <Text style={styles.actionIcon}>🔄</Text>
                       <Text style={styles.actionText}>Share</Text>
                     </TouchableOpacity>
@@ -732,5 +772,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     minHeight: 80,
     textAlignVertical: 'top',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  closeButtonText: {
+    fontSize: 18,
+    color: '#666',
+    fontWeight: 'bold',
+  },
+  postButtonText: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
