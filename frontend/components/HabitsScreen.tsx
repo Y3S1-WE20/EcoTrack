@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import AddActivityModal from './AddActivityModal';
+import EnhancedAddActivityModal from './EnhancedAddActivityModal';
 import ProgressCard from './ProgressCard';
 import ActivityList from './ActivityList';
 import { habitAPI, TodayData } from '../services/habitAPI';
@@ -170,7 +170,7 @@ const HabitsScreen = () => {
       </TouchableOpacity>
 
       {/* Add Activity Modal */}
-      <AddActivityModal
+      <EnhancedAddActivityModal
         visible={isAddModalVisible}
         onClose={() => setIsAddModalVisible(false)}
         onActivityAdded={handleActivityAdded}
