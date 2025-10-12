@@ -466,6 +466,118 @@ const deleteHabitLog = async (req, res) => {
   }
 };
 
+// Get filtered habit logs by date and category
+const getFilteredHabitLogs = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { date, categoryId } = req.query;
+
+    // Validate required parameters
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'User ID is required'
+      });
+    }
+
+    // Build the filter query
+    let filter = { userId };
+
+    // Add date filter if provided
+    if (date) {
+      const targetDate = new Date(date);
+      targetDate.setHours(0, 0, 0, 0);
+      const nextDay = new Date(targetDate);
+      nextDay.setDate(targetDate.getDate() + 1);
+      
+      filter.date = { $gte: targetDate, $lt: nextDay };
+    }
+
+    // Add category filter if provided
+    if (categoryId && categoryId !== 'all') {
+      filter.category = categoryId;
+    }
+
+    // Get filtered habit logs
+    const habitLogs = await HabitLog.find(filter)
+      .populate('activity category')
+      .sort({ date: -1 });
+
+    // Calculate statistics
+    const totalCO2 = habitLogs.reduce((sum, log) => sum + log.co2Impact, 0);
+    const activityCount = habitLogs.length;
+
+    // Group by category for pie chart data
+    const categoryBreakdown = {};
+    habitLogs.forEach(log => {
+      const categoryName = log.category.name;
+      if (!categoryBreakdown[categoryName]) {
+        categoryBreakdown[categoryName] = {
+          name: categoryName,
+          value: 0,
+          color: log.category.color,
+          icon: log.category.icon
+        };
+      }
+      categoryBreakdown[categoryName].value += log.co2Impact;
+    });
+
+    const pieChartData = Object.values(categoryBreakdown);
+
+    // Group by date for bar chart (if no specific date filter)
+    let barChartData = [];
+    if (!date) {
+      const dateGroups = {};
+      habitLogs.forEach(log => {
+        const dateKey = new Date(log.date).toISOString().split('T')[0];
+        if (!dateGroups[dateKey]) {
+          dateGroups[dateKey] = 0;
+        }
+        dateGroups[dateKey] += log.co2Impact;
+      });
+
+      barChartData = Object.entries(dateGroups).map(([date, co2]) => ({
+        date,
+        co2: parseFloat(co2.toFixed(2))
+      })).sort((a, b) => new Date(a.date) - new Date(b.date));
+    } else {
+      // For single date, show hourly breakdown
+      const hourGroups = {};
+      habitLogs.forEach(log => {
+        const hour = new Date(log.date).getHours();
+        if (!hourGroups[hour]) {
+          hourGroups[hour] = 0;
+        }
+        hourGroups[hour] += log.co2Impact;
+      });
+
+      barChartData = Array.from({ length: 24 }, (_, hour) => ({
+        hour: `${hour}:00`,
+        co2: hourGroups[hour] || 0
+      }));
+    }
+
+    res.json({
+      success: true,
+      data: {
+        habitLogs,
+        totalCO2: parseFloat(totalCO2.toFixed(2)),
+        activityCount,
+        pieChartData,
+        barChartData,
+        selectedDate: date || null,
+        selectedCategory: categoryId || 'all'
+      }
+    });
+  } catch (error) {
+    console.error('Get filtered habit logs error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get filtered habit logs'
+    });
+  }
+};
+
 module.exports = {
   getTodayImpact,
   addHabitLog,
@@ -475,5 +587,6 @@ module.exports = {
   getWeeklyStats,
   getMonthlyStats,
   updateHabitLog,
-  deleteHabitLog
+  deleteHabitLog,
+  getFilteredHabitLogs
 };

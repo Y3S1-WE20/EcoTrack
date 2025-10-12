@@ -8,13 +8,15 @@ import {
   Alert,
 } from 'react-native';
 import { HabitLog, habitAPI } from '../services/habitAPI';
+import HistoryTab from './HistoryTab';
 
 interface ActivityListProps {
   activities: HabitLog[];
   onRefresh: () => void;
+  userId: string;
 }
 
-const ActivityList: React.FC<ActivityListProps> = ({ activities, onRefresh }) => {
+const ActivityList: React.FC<ActivityListProps> = ({ activities, onRefresh, userId }) => {
   const [activeTab, setActiveTab] = useState<'today' | 'history'>('today');
 
   const formatTime = (dateString: string) => {
@@ -159,13 +161,7 @@ const ActivityList: React.FC<ActivityListProps> = ({ activities, onRefresh }) =>
         )}
 
         {activeTab === 'history' && (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>📊</Text>
-            <Text style={styles.emptyTitle}>History Coming Soon</Text>
-            <Text style={styles.emptyMessage}>
-              Weekly and monthly statistics will be available here
-            </Text>
-          </View>
+          <HistoryTab userId={userId} />
         )}
       </View>
     </View>

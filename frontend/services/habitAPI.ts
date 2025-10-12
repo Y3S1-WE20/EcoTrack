@@ -187,6 +187,41 @@ class HabitAPI {
       method: 'DELETE',
     });
   }
+
+  // Get filtered habit logs with statistics
+  async getFilteredHabitLogs(
+    userId: string, 
+    filters?: { date?: string; categoryId?: string }
+  ): Promise<ApiResponse<{
+    habitLogs: HabitLog[];
+    totalCO2: number;
+    activityCount: number;
+    pieChartData: Array<{
+      name: string;
+      value: number;
+      color: string;
+      icon: string;
+    }>;
+    barChartData: Array<{
+      date?: string;
+      hour?: string;
+      co2: number;
+    }>;
+    selectedDate: string | null;
+    selectedCategory: string;
+  }>> {
+    const searchParams = new URLSearchParams();
+    
+    if (filters?.date) {
+      searchParams.append('date', filters.date);
+    }
+    if (filters?.categoryId) {
+      searchParams.append('categoryId', filters.categoryId);
+    }
+
+    const queryString = searchParams.toString();
+    return this.request(`/habits/filtered/${userId}${queryString ? `?${queryString}` : ''}`);
+  }
 }
 
 export const habitAPI = new HabitAPI();

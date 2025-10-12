@@ -9,7 +9,8 @@ const {
   getWeeklyStats,
   getMonthlyStats,
   updateHabitLog,
-  deleteHabitLog
+  deleteHabitLog,
+  getFilteredHabitLogs
 } = require('../controllers/habitController');
 
 // GET /api/v1/habits/today/:userId - Get today's impact
@@ -38,5 +39,8 @@ router.put('/log/:logId', updateHabitLog);
 
 // DELETE /api/v1/habits/log/:logId - Delete habit log
 router.delete('/log/:logId', deleteHabitLog);
+
+// GET /api/v1/habits/filtered/:userId - Get filtered habit logs
+router.get('/filtered/:userId', getFilteredHabitLogs);
 
 module.exports = router;

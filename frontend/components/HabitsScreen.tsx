@@ -16,11 +16,9 @@ import { StatusBar } from 'expo-status-bar';
 import AddActivityModal from './AddActivityModal';
 import ProgressCard from './ProgressCard';
 import ActivityList from './ActivityList';
-import HistoryTab from './HistoryTab';
 import { habitAPI, TodayData } from '../services/habitAPI';
 
 const HabitsScreen = () => {
-  const [activeTab, setActiveTab] = useState('today');
   const [todayData, setTodayData] = useState<TodayData | null>(null);
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -97,79 +95,59 @@ const HabitsScreen = () => {
           <Text style={styles.headerTitle}>EcoTrack</Text>
           <Text style={styles.headerSubtitle}>Track your carbon footprint</Text>
         </View>
-      </View>
-
-      {/* Tab Navigation */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === 'today' && styles.activeTab]}
-          onPress={() => setActiveTab('today')}
-        >
-          <Text style={[styles.tabText, activeTab === 'today' && styles.activeTabText]}>
-            📊 Today's Impact
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === 'history' && styles.activeTab]}
-          onPress={() => setActiveTab('history')}
-        >
-          <Text style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}>
-            📈 History
-          </Text>
+        <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
+          <Text style={styles.refreshIcon}>🔄</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Tab Content */}
-      {activeTab === 'today' ? (
-        <ScrollView
-          style={styles.scrollView}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Today's Stats */}
-          <View style={styles.statsContainer}>
-            <View style={styles.todayCard}>
-              <View style={styles.todayHeader}>
-                <Text style={styles.todayLabel}>Today</Text>
-                <Text style={styles.trendIcon}>📈</Text>
-              </View>
-              <Text style={styles.todayAmount}>
-                {todayData?.todayTotal || 0.0}
-                <Text style={styles.unit}> kg CO₂</Text>
-              </Text>
-              <Text style={styles.encouragement}>
-                {(todayData?.todayTotal ?? 0) < 5 ? 'Great job!' : 'Keep improving!'}
-              </Text>
+      {/* Main Content */}
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Today's Stats */}
+        <View style={styles.statsContainer}>
+          <View style={styles.todayCard}>
+            <View style={styles.todayHeader}>
+              <Text style={styles.todayLabel}>Today</Text>
+              <Text style={styles.trendIcon}>📈</Text>
             </View>
-
-            <View style={styles.goalCard}>
-              <View style={styles.goalHeader}>
-                <Text style={styles.goalLabel}>Weekly Goal</Text>
-                <Text style={styles.goalIcon}>🎯</Text>
-              </View>
-              <Text style={styles.goalPercentage}>
-                {todayData?.weeklyProgress || 0}%
-              </Text>
-              <Text style={styles.goalTarget}>
-                {todayData?.weeklyGoal || 50} kg target
-              </Text>
-            </View>
+            <Text style={styles.todayAmount}>
+              {todayData?.todayTotal || 0.0}
+              <Text style={styles.unit}> kg CO₂</Text>
+            </Text>
+            <Text style={styles.encouragement}>
+              {(todayData?.todayTotal ?? 0) < 5 ? 'Great job!' : 'Keep improving!'}
+            </Text>
           </View>
 
-          {/* Progress Card */}
-          {todayData && <ProgressCard todayData={todayData} />}
+          <View style={styles.goalCard}>
+            <View style={styles.goalHeader}>
+              <Text style={styles.goalLabel}>Weekly Goal</Text>
+              <Text style={styles.goalIcon}>🎯</Text>
+            </View>
+            <Text style={styles.goalPercentage}>
+              {todayData?.weeklyProgress || 0}%
+            </Text>
+            <Text style={styles.goalTarget}>
+              {todayData?.weeklyGoal || 50} kg target
+            </Text>
+          </View>
+        </View>
 
-          {/* Activity List */}
-          <ActivityList
-            activities={todayData?.activities || []}
-            onRefresh={loadTodayData}
-          />
-        </ScrollView>
-      ) : (
-        <HistoryTab userId={userId} />
-      )}
+        {/* Progress Card */}
+        {todayData && <ProgressCard todayData={todayData} />}
+
+        {/* Activity List with History Tab */}
+        <ActivityList
+          activities={todayData?.activities || []}
+          onRefresh={loadTodayData}
+          userId={userId}
+        />
+      </ScrollView>
 
       {/* Add Activity Button */}
       <TouchableOpacity
@@ -207,7 +185,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
@@ -225,31 +203,11 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 2,
   },
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+  refreshButton: {
+    padding: 8,
   },
-  tabButton: {
-    flex: 1,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  activeTab: {
-    borderBottomColor: '#4CAF50',
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#666',
-  },
-  activeTabText: {
-    color: '#4CAF50',
-    fontWeight: '600',
+  refreshIcon: {
+    fontSize: 20,
   },
   scrollView: {
     flex: 1,
