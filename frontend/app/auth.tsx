@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
+import EcoTrackLogo from '@/components/EcoTrackLogo';
 
 export default function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true);
@@ -103,7 +104,9 @@ export default function AuthScreen() {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.content}>
-          <Text style={styles.title}>EcoTrack</Text>
+          <View style={styles.logoContainer}>
+            <EcoTrackLogo size="large" showText={false} />
+          </View>
           <Text style={styles.subtitle}>
             {isLogin ? 'Welcome back!' : 'Start your eco journey'}
           </Text>
@@ -185,12 +188,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: '80%',
   },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: '#22c55e',
-    marginBottom: 8,
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
   },
   subtitle: {
     fontSize: 16,

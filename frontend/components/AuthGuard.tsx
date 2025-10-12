@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
+import EcoTrackLogo from '@/components/EcoTrackLogo';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -45,7 +46,10 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#22c55e" />
+        <View style={styles.logoContainer}>
+          <EcoTrackLogo size="large" showText={true} />
+        </View>
+        <ActivityIndicator size="large" color="#22c55e" style={styles.spinner} />
       </View>
     );
   }
@@ -59,5 +63,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f8f9fa',
+  },
+  logoContainer: {
+    marginBottom: 32,
+  },
+  spinner: {
+    marginTop: 16,
   },
 });
