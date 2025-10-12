@@ -25,7 +25,7 @@ const HabitsScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   // For demo purposes, using a fixed user ID
-  const userId = 'user123';
+  const userId = 'testuser';
 
   useEffect(() => {
     loadTodayData();

@@ -1,0 +1,31 @@
+[dotenv@17.2.2] injecting env (3) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 📡 observe env with Radar: https://dotenvx.com/radar
+(node:43026) [MONGODB DRIVER] Warning: useNewUrlParser is a deprecated option: useNewUrlParser has no effect since Node.js Driver version 4.0.0 and will be removed in the next major version
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:43026) [MONGODB DRIVER] Warning: useUnifiedTopology is a deprecated option: useUnifiedTopology has no effect since Node.js Driver version 4.0.0 and will be removed in the next major version
+MongoDB Connected: cluster0-shard-00-01.ng1rq.mongodb.net
+Text indexes created successfully
+✅ Database connected successfully
+Categories already exist, skipping seed
+✅ Initial data seeded
+🚀 EcoTrack backend listening on http://localhost:4000
+📚 API Documentation: http://localhost:4000/api/v1
+[0mGET /api/v1/health [33m404[0m 1.343 ms - 43[0m
+[0mGET /api/v1/habit-logs/filtered?days=7 [33m404[0m 0.194 ms - 43[0m
+[0mGET /api/v1/habits/filtered?days=7 [33m404[0m 0.340 ms - 43[0m
+Get filtered habit logs error: TypeError: Cannot read properties of null (reading 'name')
+    at /Users/shiranthadissanayake/Documents/GitHub/EcoTrack/backend/controllers/habitController.js:513:41
+    at Array.forEach (<anonymous>)
+    at getFilteredHabitLogs (/Users/shiranthadissanayake/Documents/GitHub/EcoTrack/backend/controllers/habitController.js:512:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[0mGET /api/v1/habits/filtered/user123?days=7 [31m500[0m 205.038 ms - 61[0m
+[0mGET /api/v1/habits/categories [32m200[0m 103.902 ms - 1438[0m
+[0mGET /api/v1/habits/history/testuser [32m200[0m 171.620 ms - 88[0m
+[0mPOST /api/v1/habits/log [33m404[0m 90.040 ms - 46[0m
+[0mGET /api/v1/habits/activities/68e7cf71b5c0dc3932595377 [32m200[0m 123.945 ms - 4145[0m
+[0mPOST /api/v1/habits/log [32m201[0m 366.709 ms - 929[0m
+[0mPOST /api/v1/habits/log [32m201[0m 419.835 ms - 911[0m
+[0mGET /api/v1/habits/activities/68e7cf71b5c0dc3932595378 [32m200[0m 77.552 ms - 3493[0m
+[0mPOST /api/v1/habits/log [32m201[0m 972.404 ms - 900[0m
+[0mGET /api/v1/habits/filtered/testuser [32m200[0m 153.094 ms - 2866[0m
+[0mGET / [32m200[0m 0.199 ms - 95[0m

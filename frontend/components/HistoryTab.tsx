@@ -202,6 +202,7 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ userId }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [tempDate, setTempDate] = useState<Date>(new Date());
 
   useEffect(() => {
@@ -276,6 +277,12 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ userId }) => {
     });
     
     return dates;
+  };
+
+  const getSelectedCategoryName = () => {
+    if (selectedCategory === 'all') return 'All Categories';
+    const category = categories.find(cat => cat._id === selectedCategory);
+    return category ? `${category.icon} ${category.name}` : 'All Categories';
   };
 
   const handleDatePickerConfirm = () => {
@@ -361,40 +368,13 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ userId }) => {
 
       <View style={styles.filterSection}>
         <Text style={styles.filterLabel}>Filter by Category</Text>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          style={styles.categoryScroll}
+        <TouchableOpacity
+          style={styles.dropdownButton}
+          onPress={() => setShowCategoryDropdown(true)}
         >
-          <TouchableOpacity
-            style={[
-              styles.categoryChip,
-              selectedCategory === 'all' && styles.selectedCategoryChip
-            ]}
-            onPress={() => setSelectedCategory('all')}
-          >
-            <Text style={styles.categoryIcon}>All</Text>
-          </TouchableOpacity>
-          
-          {categories.map((category) => (
-            <TouchableOpacity
-              key={category._id}
-              style={[
-                styles.categoryChip,
-                selectedCategory === category._id && styles.selectedCategoryChip
-              ]}
-              onPress={() => setSelectedCategory(category._id)}
-            >
-              <Text style={styles.categoryIcon}>{category.icon}</Text>
-              <Text style={[
-                styles.categoryChipText,
-                selectedCategory === category._id && styles.selectedCategoryChipText
-              ]}>
-                {category.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+          <Text style={styles.dropdownButtonText}>{getSelectedCategoryName()}</Text>
+          <Text style={styles.dropdownArrow}>▼</Text>
+        </TouchableOpacity>
       </View>
 
       {filteredData && (
@@ -661,6 +641,64 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ userId }) => {
           </View>
         </View>
       </Modal>
+
+      {/* Category Dropdown Modal */}
+      <Modal
+        visible={showCategoryDropdown}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowCategoryDropdown(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Category</Text>
+            
+            <ScrollView style={styles.categoryDropdownList}>
+              <TouchableOpacity
+                style={[
+                  styles.categoryDropdownItem,
+                  selectedCategory === 'all' && styles.selectedCategoryDropdownItem
+                ]}
+                onPress={() => {
+                  setSelectedCategory('all');
+                  setShowCategoryDropdown(false);
+                }}
+              >
+                <Text style={styles.categoryDropdownIcon}>📊</Text>
+                <Text style={styles.categoryDropdownText}>All Categories</Text>
+                {selectedCategory === 'all' && <Text style={styles.checkmark}>✓</Text>}
+              </TouchableOpacity>
+              
+              {categories.map((category) => (
+                <TouchableOpacity
+                  key={category._id}
+                  style={[
+                    styles.categoryDropdownItem,
+                    selectedCategory === category._id && styles.selectedCategoryDropdownItem
+                  ]}
+                  onPress={() => {
+                    setSelectedCategory(category._id);
+                    setShowCategoryDropdown(false);
+                  }}
+                >
+                  <Text style={styles.categoryDropdownIcon}>{category.icon}</Text>
+                  <Text style={styles.categoryDropdownText}>{category.name}</Text>
+                  {selectedCategory === category._id && <Text style={styles.checkmark}>✓</Text>}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setShowCategoryDropdown(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -724,36 +762,6 @@ const styles = StyleSheet.create({
   datePickerChipText: {
     color: '#FFFFFF',
     fontWeight: '600',
-  },
-  categoryScroll: {
-    flexDirection: 'row',
-  },
-  categoryChip: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  selectedCategoryChip: {
-    backgroundColor: '#212121',
-    borderColor: '#212121',
-  },
-  categoryIcon: {
-    fontSize: 16,
-    marginRight: 6,
-  },
-  categoryChipText: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
-  },
-  selectedCategoryChipText: {
-    color: '#FFFFFF',
   },
   summaryContainer: {
     flexDirection: 'row',
@@ -1064,6 +1072,62 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#1976D2',
     fontWeight: '600',
+  },
+  // Dropdown styles
+  dropdownButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    minHeight: 48,
+  },
+  dropdownButtonText: {
+    fontSize: 16,
+    color: '#212121',
+    fontWeight: '500',
+    flex: 1,
+  },
+  dropdownArrow: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 8,
+  },
+  categoryDropdownList: {
+    maxHeight: 300,
+    marginVertical: 16,
+  },
+  categoryDropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  selectedCategoryDropdownItem: {
+    backgroundColor: '#F3E5F5',
+  },
+  categoryDropdownIcon: {
+    fontSize: 20,
+    marginRight: 12,
+    width: 24,
+    textAlign: 'center',
+  },
+  categoryDropdownText: {
+    fontSize: 16,
+    color: '#212121',
+    flex: 1,
+    fontWeight: '500',
+  },
+  checkmark: {
+    fontSize: 16,
+    color: '#4CAF50',
+    fontWeight: 'bold',
   },
 });
 
