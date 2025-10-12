@@ -15,6 +15,7 @@ require('dotenv').config();
 
 const { connectDB, seedInitialData } = require('./config/database');
 const habitRoutes = require('./routes/habitRoutes');
+const challengeRoutes = require('./routes/challengeRoutes');
 const config = require('./config/config');
 
 const app = express();
@@ -29,6 +30,7 @@ const PORT = config.PORT;
 
 // API Routes
 app.use(`${config.API_PREFIX}/habits`, habitRoutes);
+app.use(`${config.API_PREFIX}/challenges`, challengeRoutes);
 
 // Health check routes
 app.get('/', (req, res) => {
