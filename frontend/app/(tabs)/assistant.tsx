@@ -14,7 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import EnhancedMessageBubble, { EnhancedMessage } from '@/components/chat/EnhancedMessageBubble';
 import EnhancedChatInput from '@/components/chat/EnhancedChatInput';
-import EcoTrackLogo from '@/components/EcoTrackLogo';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import chatAPI, { ChatResponse } from '@/services/chatAPI';
 import clearAllStoredData from '@/utils/clearStorage';
@@ -162,19 +162,19 @@ const AssistantScreen = () => {
       <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
         <View style={styles.headerContent}>
           <View style={styles.headerInfo}>
-            <EcoTrackLogo size="header" showText={false} />
+            <View style={[styles.headerIcon, { backgroundColor: theme.primary + '20' }]}>
+              <IconSymbol name="message.fill" size={20} color={theme.primary} />
+            </View>
             <View style={styles.headerText}>
               <Text style={[styles.title, { color: theme.text }]}>AI Assistant</Text>
-              <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-                Multilingual eco tracking & tips
-              </Text>
+              <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Multilingual eco tracking & tips</Text>
             </View>
           </View>
           <TouchableOpacity 
             style={[styles.resetButton, { backgroundColor: theme.error + '20', borderColor: theme.error }]} 
             onPress={handleClearData}
           >
-            <Text style={[styles.resetButtonText, { color: theme.error }]}>🧹 Reset</Text>
+            <IconSymbol name="refresh" size={16} color={theme.error} />
           </TouchableOpacity>
         </View>
       </View>
@@ -241,6 +241,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 2,
+  },
+  headerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   subtitle: {
     fontSize: 12,

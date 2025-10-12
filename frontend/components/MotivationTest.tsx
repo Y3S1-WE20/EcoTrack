@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { apiConfig } from '../services/apiConfig';
 
 export default function MotivationTest() {
   const [status, setStatus] = useState('Loading...');
@@ -11,12 +12,13 @@ export default function MotivationTest() {
   const testAPI = async () => {
     setStatus('Testing motivation API...');
     
-    const testUrls = [
-      'http://192.168.1.10:4000/api/v1/motivation/health',
-      'http://localhost:4000/api/v1/motivation/health',
-      'http://192.168.1.10:4000/api/v1', // Test if base API works
-      'http://localhost:4000/api/v1', // Test if base API works
-    ];
+    const candidates = await apiConfig.getOrderedUrls();
+    // Expand base URLs to test both /motivation/health and root
+    const testUrls: string[] = [];
+    for (const base of candidates) {
+      testUrls.push(`${base}/motivation/health`);
+      testUrls.push(base);
+    }
 
     for (const url of testUrls) {
       try {

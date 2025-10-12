@@ -14,6 +14,7 @@ import { QUIZ_QUESTIONS, calculateCO2Baseline } from '@/data/quizData';
 import { QuizAnswer } from '@/types/onboarding';
 import { profileAPI } from '@/services/profileAPI';
 import { useAuth } from '@/contexts/AuthContext';
+import EcoTrackLogo from '@/components/EcoTrackLogo';
 
 interface QuizScreenProps {
   onComplete?: () => void;
@@ -162,6 +163,9 @@ export default function OnboardingQuiz({ onComplete }: QuizScreenProps) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
+        <View style={styles.logoContainer}>
+          <EcoTrackLogo size="medium" showText={false} />
+        </View>
         <Text style={styles.title}>Carbon Footprint Assessment</Text>
         <Text style={styles.subtitle}>
           Question {currentQuestionIndex + 1} of {QUIZ_QUESTIONS.length}
@@ -260,6 +264,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e1e1e1',
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 12,
   },
   title: {
     fontSize: 24,

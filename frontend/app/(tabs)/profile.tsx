@@ -72,9 +72,8 @@ const ProfileScreen = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView style={styles.scrollView}>
         <View style={styles.content}>
-          {/* Profile Header with Logo */}
+          {/* Profile Header */}
           <View style={[styles.profileHeader, { backgroundColor: theme.surface }]}>
-            <EcoTrackLogo size="header" showText={true} style={styles.headerLogo} />
             <View style={styles.avatar}>
               {user.profileImage ? (
                 <Image source={{ uri: user.profileImage }} style={styles.profileImage} />
@@ -121,63 +120,63 @@ const ProfileScreen = () => {
               style={styles.menuItem}
               onPress={() => router.push('/carbon-report')}
             >
-              <Text style={styles.menuIcon}>📊</Text>
+              <View style={styles.menuIconContainer}><IconSymbol name="chart.bar" size={20} color={theme.primary} /></View>
               <Text style={styles.menuText}>Carbon Footprint Report</Text>
-              <Text style={styles.menuArrow}>→</Text>
+              <IconSymbol name="chevron.right" size={16} color={theme.textTertiary} />
             </TouchableOpacity>
 
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => router.push('/personal-goals')}
             >
-              <Text style={styles.menuIcon}>🎯</Text>
+              <View style={styles.menuIconContainer}><IconSymbol name="target" size={20} color={theme.primary} /></View>
               <Text style={styles.menuText}>Personal Goals</Text>
-              <Text style={styles.menuArrow}>→</Text>
+              <IconSymbol name="chevron.right" size={16} color={theme.textTertiary} />
             </TouchableOpacity>
 
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => router.push('/motivation')}
             >
-              <Text style={styles.menuIcon}>⭐</Text>
+              <View style={styles.menuIconContainer}><IconSymbol name="star.fill" size={20} color={theme.primary} /></View>
               <Text style={styles.menuText}>Motivation Hub</Text>
-              <Text style={styles.menuArrow}>→</Text>
+              <IconSymbol name="chevron.right" size={16} color={theme.textTertiary} />
             </TouchableOpacity>
 
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => router.push('/notifications')}
             >
-              <Text style={styles.menuIcon}>🔔</Text>
+              <View style={styles.menuIconContainer}><IconSymbol name="bell.fill" size={20} color={theme.primary} /></View>
               <Text style={styles.menuText}>Notifications</Text>
-              <Text style={styles.menuArrow}>→</Text>
+              <IconSymbol name="chevron.right" size={16} color={theme.textTertiary} />
             </TouchableOpacity>
 
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => router.push('/carbon-offset-program')}
             >
-              <Text style={styles.menuIcon}>🌍</Text>
+              <View style={styles.menuIconContainer}><IconSymbol name="safari.fill" size={20} color={theme.primary} /></View>
               <Text style={styles.menuText}>Carbon Offset Programs</Text>
-              <Text style={styles.menuArrow}>→</Text>
+              <IconSymbol name="chevron.right" size={16} color={theme.textTertiary} />
             </TouchableOpacity>
 
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => router.push('/learn-sustainability')}
             >
-              <Text style={styles.menuIcon}>📚</Text>
+              <View style={styles.menuIconContainer}><IconSymbol name="doc.text" size={20} color={theme.primary} /></View>
               <Text style={styles.menuText}>Learn About Sustainability</Text>
-              <Text style={styles.menuArrow}>→</Text>
+              <IconSymbol name="chevron.right" size={16} color={theme.textTertiary} />
             </TouchableOpacity>
 
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => router.push('/settings')}
             >
-              <Text style={styles.menuIcon}>⚙️</Text>
+              <View style={styles.menuIconContainer}><IconSymbol name="gearshape.fill" size={20} color={theme.primary} /></View>
               <Text style={styles.menuText}>Settings</Text>
-              <Text style={styles.menuArrow}>→</Text>
+              <IconSymbol name="chevron.right" size={16} color={theme.textTertiary} />
             </TouchableOpacity>
 
             {/* Theme Toggle */}
@@ -206,9 +205,9 @@ const ProfileScreen = () => {
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.logoutItem} onPress={handleLogout}>
-              <Text style={styles.menuIcon}>🚪</Text>
+              <View style={styles.menuIconContainer}><IconSymbol name="logout" size={20} color={'#dc2626'} /></View>
               <Text style={styles.logoutText}>Sign Out</Text>
-              <Text style={styles.menuArrow}>→</Text>
+              <IconSymbol name="chevron.right" size={16} color={theme.textTertiary} />
             </TouchableOpacity>
           </View>
 
@@ -383,6 +382,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(76, 175, 80, 0.1)',
+  },
+  menuIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    backgroundColor: 'transparent',
   },
   themeTextContainer: {
     flex: 1,
