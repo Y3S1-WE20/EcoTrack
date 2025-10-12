@@ -11,7 +11,11 @@
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
-require('dotenv').config();
+const path = require('path');
+
+// Load environment variables from backend/.env explicitly so starting the
+// server from the repository root still picks up the backend env file.
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const { connectDB, seedInitialData } = require('./config/database');
 const habitRoutes = require('./routes/habitRoutes');

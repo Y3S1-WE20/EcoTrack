@@ -5,6 +5,11 @@ const connectDB = async () => {
     // Use MONGODB_URI directly if it already includes database name
     // Otherwise append DATABASE_NAME
     let mongoURI = process.env.MONGODB_URI;
+    if (!mongoURI || typeof mongoURI !== 'string') {
+      console.error('❌ MONGODB_URI is not set or is not a valid string. Please check backend/.env');
+      process.exit(1);
+    }
+
     if (!mongoURI.includes('/') || mongoURI.endsWith('/')) {
       mongoURI = mongoURI.endsWith('/') 
         ? `${mongoURI}${process.env.DATABASE_NAME}`
