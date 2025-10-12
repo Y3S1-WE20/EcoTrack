@@ -5,8 +5,8 @@ const getBaseURL = () => {
   if (Platform.OS === 'web') {
     return 'http://localhost:4000/api/v1';
   }
-  // For mobile devices, use the IP address from Metro
-  return 'http://10.242.110.132:4000/api/v1';
+  // For mobile devices, use the current machine's IP address
+  return 'http://192.168.43.8:4000/api/v1';
 };
 
 const API_BASE_URL = getBaseURL();
