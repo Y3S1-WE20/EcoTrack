@@ -58,7 +58,10 @@ npm run dev
 
 cd backend
 npx localtunnel --port 4000
+Paste it on frontend/services/apiConfig.ts
+replace lt port link
 
 cd frontend
 npm i
 npx expo start --tunnel
+
