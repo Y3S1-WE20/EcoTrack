@@ -48,3 +48,17 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+
+##simple instructions
+cd backend 
+npm i
+npm run dev
+
+
+cd backend
+npx localtunnel --port 4000
+
+cd frontend
+npm i
+npx expo start --tunnel
