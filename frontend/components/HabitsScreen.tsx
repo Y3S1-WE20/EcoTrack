@@ -15,6 +15,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Circle, Path, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
+import { IconSymbol } from '../components/ui/icon-symbol';
 import AddActivityModal from './AddActivityModal';
 import ProgressCard from './ProgressCard';
 import ActivityList from './ActivityList';
@@ -23,6 +25,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { IconSymbol } from './ui/icon-symbol';
 import Header from './Header';
+
+const { width } = Dimensions.get('window');
 
 const HabitsScreen = () => {
   const [todayData, setTodayData] = useState<TodayData | null>(null);
@@ -163,6 +167,9 @@ const HabitsScreen = () => {
     );
   }
 
+  const weeklyProgressPercentage = todayData ? 
+    Math.min((todayData.weeklyProgress / 100) * 100, 100) : 0;
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
@@ -198,10 +205,11 @@ const HabitsScreen = () => {
               {todayData?.todayTotal || 7.0}
               <Text style={styles.statUnit}>kg CO₂</Text>
             </Text>
-            <View style={styles.encouragementContainer}>
-              <Text style={styles.encouragementIcon}>💪</Text>
-              <Text style={styles.encouragementText}>Keep improving!</Text>
-            </View>
+            {!isCompactMode && (
+              <Text style={styles.encouragement}>
+                {(todayData?.todayTotal ?? 0) < 5 ? '🎉 Great job!' : '💪 Keep improving!'}
+              </Text>
+            )}
           </View>
 
           <View style={styles.statCard}>
@@ -212,46 +220,81 @@ const HabitsScreen = () => {
               <Text style={styles.streakIcon}>🔥</Text>
               <Text style={styles.streakText}>7 day streak!</Text>
             </View>
+            <Text style={[styles.goalPercentage, { color: theme.text }]}>
+              {todayData?.weeklyProgress || 0}%
+            </Text>
+            <Text style={[styles.goalTarget, { color: theme.textSecondary }]}>
+              {todayData?.weeklyGoal || 50} kg target
+            </Text>
+            <View style={styles.goalProgress}>
+              <Text style={[
+                styles.goalPercentage,
+                isCompactMode && styles.goalPercentageCompact
+              ]}>
+                {Math.round(weeklyProgressPercentage)}%
+              </Text>
+              <View style={[
+                styles.goalProgressBar,
+                isCompactMode && styles.goalProgressBarCompact
+              ]}>
+                <View 
+                  style={[
+                    styles.goalProgressFill, 
+                    { width: `${Math.min(weeklyProgressPercentage, 100)}%` }
+                  ]} 
+                />
+              </View>
+            </View>
+            {!isCompactMode && (
+              <>
+                <Text style={styles.goalTarget}>
+                  {todayData?.weeklyGoal || 50} kg target
+                </Text>
+                <View style={styles.streakContainer}>
+                  <IconSymbol size={16} name="flame.fill" color="#FF6B35" />
+                  <Text style={styles.streakText}>7 day streak!</Text>
+                </View>
+              </>
+            )}
           </View>
         </View>
+      </View>
 
-        {/* Activity Tabs */}
-        <View style={styles.tabContainer}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'today' && styles.activeTab]}
-            onPress={() => setActiveTab('today')}
-          >
-            <IconSymbol name="calendar" size={20} color={activeTab === 'today' ? 'white' : '#666'} />
-            <Text style={[styles.tabText, activeTab === 'today' && styles.activeTabText]}>
-              Today's Activities
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'history' && styles.activeTab]}
-            onPress={() => setActiveTab('history')}
-          >
-            <IconSymbol name="chart.bar" size={20} color={activeTab === 'history' ? 'white' : '#666'} />
-            <Text style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}>
-              History
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Activity List (use reusable component) */}
+      {/* Main Content with Dynamic Height */}
+      <ScrollView
+        style={[
+          styles.scrollView,
+          isCompactMode && styles.scrollViewExpanded
+        ]}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+        showsVerticalScrollIndicator={false}
+        onScroll={(event) => {
+          setScrollY(event.nativeEvent.contentOffset.y);
+        }}
+        scrollEventThrottle={16}
+      >
+        {/* Activity List with History Tab */}
         <ActivityList
           activities={todayData?.activities || []}
-          onRefresh={handleRefresh}
-          activeTab={activeTab === 'today' ? 'today' : 'history'}
+          onRefresh={loadTodayData}
+          userId={userId}
         />
       </View>
 
-      {/* Add Activity Button */}
+      {/* Modern Add Activity Button */}
       <TouchableOpacity
         style={styles.addButton}
         onPress={() => setIsAddModalVisible(true)}
       >
-        <Text style={styles.addButtonText}>+</Text>
+        <LinearGradient
+          colors={['#00E676', '#4CAF50']}
+          style={styles.addButtonGradient}
+        >
+          <IconSymbol size={28} name="plus" color="#FFFFFF" />
+        </LinearGradient>
       </TouchableOpacity>
 
       {/* Add Activity Modal */}
@@ -307,7 +350,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: 'white',
   },
@@ -316,149 +359,92 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.8)',
     marginTop: 2,
   },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+  notificationButton: {
+    padding: 8,
   },
-  notificationIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
+  profileButton: {
+    padding: 4,
   },
-  profileIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
+  impactSection: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
-  badgeContainer: {
+  impactHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    marginTop: 20,
+    marginBottom: 20,
   },
   impactBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+  },
+  impactBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  dayBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 20,
   },
-  badgeIcon: {
-    marginRight: 8,
-  },
-  co2Icon: {
-    fontSize: 16,
-  },
-  badgeText: {
-    color: 'white',
+  dayBadgeText: {
+    color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: '500',
-  },
-  dayCounter: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  dayCounterText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   progressSection: {
     alignItems: 'center',
-    marginTop: 30,
+    marginTop: 10,
   },
-  circularProgressContainer: {
-    position: 'relative',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 160,
-    height: 160,
-  },
-  circularProgressBackground: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    borderWidth: 8,
-    borderColor: 'rgba(255,255,255,0.3)',
+  progressCenter: {
     position: 'absolute',
-  },
-  circularProgressFill: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    borderWidth: 8,
-    borderColor: '#00E676',
-    borderRightColor: 'transparent',
-    borderBottomColor: 'transparent',
-    position: 'absolute',
-  },
-  circularProgressText: {
-    position: 'absolute',
-    justifyContent: 'center',
+    bottom: 10,
     alignItems: 'center',
   },
   progressPercentage: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: 'white',
-    textAlign: 'center',
+    color: '#FFFFFF',
   },
   progressLabel: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-    textAlign: 'center',
+    color: 'rgba(255, 255, 255, 0.9)',
     marginTop: 4,
   },
-  bottomContent: {
-    flex: 1,
-    backgroundColor: 'white',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 20,
-    marginTop: -20,
-  },
   statsContainer: {
-    flexDirection: 'row',
     paddingHorizontal: 20,
-    gap: 16,
-    marginBottom: 20,
+    marginTop: -20,
   },
   statCard: {
     flex: 1,
     backgroundColor: '#F8F9FA',
     borderRadius: 16,
-    padding: 16,
-  },
-  statLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
-  },
-  statUnit: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: 'normal',
-  },
-  encouragementContainer: {
+    padding: 20,
     flexDirection: 'row',
-    alignItems: 'center',
+    gap: 20,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.1)',
+      },
+      default: {
+        elevation: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+      },
+    }),
+  },
+  todayStats: {
+    flex: 1,
   },
   encouragementIcon: {
     fontSize: 14,
@@ -468,34 +454,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#4CAF50',
     fontWeight: '500',
-  },
-  targetText: {
-    fontSize: 12,
-    color: '#666',
     marginBottom: 8,
   },
-  streakContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  todayAmount: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 4,
   },
-  streakIcon: {
+  unit: {
     fontSize: 14,
-    marginRight: 4,
+    fontWeight: 'normal',
   },
   streakText: {
     fontSize: 12,
     color: '#FF9800',
     fontWeight: '500',
   },
-  tabContainer: {
-    flexDirection: 'row',
-    marginHorizontal: 20,
-    marginBottom: 20,
-    backgroundColor: '#F0F0F0',
-    borderRadius: 12,
-    padding: 4,
-  },
-  tab: {
+  goalStats: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -510,48 +485,14 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#666',
-    marginLeft: 8,
+    marginBottom: 8,
   },
-  activeTabText: {
-    color: 'white',
+  goalProgress: {
+    marginBottom: 8,
   },
-  activityScrollView: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  activityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  activityIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#F0F8F0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  activityEmoji: {
+  goalPercentage: {
     fontSize: 24,
-  },
-  activityDetails: {
-    flex: 1,
-  },
-  activityType: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: 'bold',
     marginBottom: 4,
   },
   activityAmount: {
@@ -589,11 +530,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 4px 20px rgba(0, 230, 118, 0.4)',
+      },
+      default: {
+        elevation: 12,
+        shadowColor: '#00E676',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+      },
+    }),
+  },
+  addButtonGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   addButtonText: {
     fontSize: 32,

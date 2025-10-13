@@ -7,8 +7,10 @@ const {
   getCategories,
   getActivityHistory,
   getWeeklyStats,
+  getMonthlyStats,
   updateHabitLog,
-  deleteHabitLog
+  deleteHabitLog,
+  getFilteredHabitLogs
 } = require('../controllers/habitController');
 const { protect, optionalAuth } = require('../middleware/auth');
 
@@ -32,10 +34,16 @@ router.get('/history', protect, getActivityHistory);
 // GET /api/v1/habits/stats/weekly - Get weekly statistics for current user
 router.get('/stats/weekly', protect, getWeeklyStats);
 
+// GET /api/v1/habits/stats/monthly/:userId - Get monthly statistics
+router.get('/stats/monthly/:userId', getMonthlyStats);
+
 // PUT /api/v1/habits/log/:logId - Update habit log
 router.put('/log/:logId', protect, updateHabitLog);
 
 // DELETE /api/v1/habits/log/:logId - Delete habit log
 router.delete('/log/:logId', protect, deleteHabitLog);
+
+// GET /api/v1/habits/filtered/:userId - Get filtered habit logs
+router.get('/filtered/:userId', getFilteredHabitLogs);
 
 module.exports = router;

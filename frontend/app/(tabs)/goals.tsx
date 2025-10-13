@@ -483,6 +483,317 @@ export default function GoalsScreen() {
             </View>
           </View>
         </View>
+
+        {/* Add New Goal Button */}
+        <TouchableOpacity
+          style={[styles.addGoalButton, { backgroundColor: theme.surface }]}
+          onPress={() => Alert.alert('Add Goal', 'Feature coming soon!')}
+        >
+          <Text style={styles.addGoalIcon}>➕</Text>
+          <Text style={[styles.addGoalText, { color: theme.text }]}>Add New Goal</Text>
+        </TouchableOpacity>
+      </ScrollView>
+
+      {/* Create Goal Modal */}
+      <Modal
+        visible={showCreateGoal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowCreateGoal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Create New Goal</Text>
+            
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Goal Name</Text>
+              <TextInput
+                style={styles.input}
+                value={newGoal.name}
+                onChangeText={(text) => setNewGoal({...newGoal, name: text})}
+                placeholder="e.g., Weekly Cycling Goal"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Goal Type</Text>
+              <View style={styles.goalTypeButtons}>
+                {['weekly', 'monthly', 'yearly', 'custom'].map((type) => (
+                  <TouchableOpacity
+                    key={type}
+                    style={[
+                      styles.goalTypeButton,
+                      newGoal.type === type && styles.selectedGoalType
+                    ]}
+                    onPress={() => setNewGoal({...newGoal, type: type as any})}
+                  >
+                    <Text style={[
+                      styles.goalTypeText,
+                      newGoal.type === type && styles.selectedGoalTypeText
+                    ]}>
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.inputRow}>
+              <View style={[styles.inputGroup, {flex: 1, marginRight: 8}]}>
+                <Text style={styles.inputLabel}>Target</Text>
+                <TextInput
+                  style={styles.input}
+                  value={newGoal.target}
+                  onChangeText={(text) => setNewGoal({...newGoal, target: text})}
+                  placeholder="50"
+                  keyboardType="numeric"
+                />
+              </View>
+              <View style={[styles.inputGroup, {flex: 1, marginLeft: 8}]}>
+                <Text style={styles.inputLabel}>Unit</Text>
+                <TextInput
+                  style={styles.input}
+                  value={newGoal.unit}
+                  onChangeText={(text) => setNewGoal({...newGoal, unit: text})}
+                  placeholder="kg CO₂"
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Description (Optional)</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                value={newGoal.description}
+                onChangeText={(text) => setNewGoal({...newGoal, description: text})}
+                placeholder="Describe your goal..."
+                multiline
+                numberOfLines={3}
+              />
+            </View>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setShowCreateGoal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.createButton]}
+                onPress={handleCreateGoal}
+              >
+                <Text style={styles.createButtonText}>Create Goal</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Achievement Detail Modal */}
+      <Modal
+        visible={!!showAchievementDetail}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowAchievementDetail(null)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowAchievementDetail(null)}
+        >
+          <TouchableOpacity 
+            style={styles.modalContent}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
+            {showAchievementDetail && (
+              <>
+                {/* Achievement Icon */}
+                <Text style={styles.achievementDetailIcon}>
+                  {showAchievementDetail.unlockedAt ? showAchievementDetail.icon : '🔒'}
+                </Text>
+
+                {/* Category and Difficulty */}
+                <View style={styles.achievementDetailMeta}>
+                  <View style={[
+                    styles.categoryTag,
+                    { backgroundColor: showAchievementDetail.color }
+                  ]}>
+                    <Text style={styles.categoryTagText}>
+                      {showAchievementDetail.category.toUpperCase()}
+                    </Text>
+                  </View>
+                  <Text style={styles.achievementDetailDifficulty}>
+                    {showAchievementDetail.difficulty === 'easy' ? 'Easy' : 
+                     showAchievementDetail.difficulty === 'medium' ? 'Medium' : 'Hard'}
+                  </Text>
+                </View>
+
+                {/* Achievement Name */}
+                <Text style={[
+                  styles.achievementDetailName,
+                  { color: showAchievementDetail.color }
+                ]}>
+                  {showAchievementDetail.name}
+                </Text>
+
+                {/* Description */}
+                <Text style={styles.achievementDetailDesc}>
+                  {showAchievementDetail.description}
+                </Text>
+
+                {/* Requirements */}
+                <Text style={styles.achievementDetailRequirements}>
+                  Requirements: {showAchievementDetail.requirements}
+                </Text>
+
+                {/* XP Reward */}
+                {showAchievementDetail.unlockedAt && (
+                  <View style={styles.xpRewardBadge}>
+                    <Text style={styles.xpRewardText}>
+                      Earned: +{showAchievementDetail.xpReward} XP
+                    </Text>
+                  </View>
+                )}
+                
+                {/* Status */}
+                {showAchievementDetail.unlockedAt ? (
+                  <Text style={styles.achievementUnlockedDate}>
+                    🎉 Unlocked on {showAchievementDetail.unlockedAt.toLocaleDateString()}
+                  </Text>
+                ) : (
+                  <View style={styles.achievementDetailProgress}>
+                    <Text style={styles.achievementDetailProgressText}>
+                      Progress: {showAchievementDetail.progress} / {showAchievementDetail.maxProgress} 
+                      ({Math.round((showAchievementDetail.progress / showAchievementDetail.maxProgress) * 100)}%)
+                    </Text>
+                    <View style={styles.achievementDetailProgressBar}>
+                      <View style={[
+                        styles.achievementDetailProgressFill,
+                        { 
+                          width: `${(showAchievementDetail.progress / showAchievementDetail.maxProgress) * 100}%`,
+                          backgroundColor: showAchievementDetail.color
+                        }
+                      ]} />
+                    </View>
+                    <Text style={styles.achievementDetailRemaining}>
+                      {showAchievementDetail.maxProgress - showAchievementDetail.progress} more to unlock!
+                    </Text>
+                  </View>
+                )}
+              </>
+            )}
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Challenge Sharing Modal */}
+      <Modal
+        visible={showSharingModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowSharingModal(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowSharingModal(false)}
+        >
+          <TouchableOpacity 
+            style={styles.sharingModalContent}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
+            {selectedChallenge && (
+              <>
+                {/* Badge Preview */}
+                <View style={[styles.sharingBadgePreview, { backgroundColor: selectedChallenge.color }]}>
+                  <Text style={styles.sharingBadgeIcon}>{selectedChallenge.icon}</Text>
+                  <Text style={styles.sharingBadgeTitle}>{selectedChallenge.name}</Text>
+                  <Text style={styles.sharingBadgeReward}>{selectedChallenge.reward}</Text>
+                </View>
+
+                <Text style={styles.sharingTitle}>Share Your Achievement! 🎉</Text>
+                
+                {/* Message Preview */}
+                <View style={styles.messagePreview}>
+                  <Text style={styles.messagePreviewLabel}>Your message:</Text>
+                  <Text style={styles.messagePreviewText}>
+                    {generateSharingMessage(selectedChallenge, sharingOptions)}
+                  </Text>
+                </View>
+
+                {/* Sharing Options */}
+                <View style={styles.sharingOptions}>
+                  <Text style={styles.sharingOptionsTitle}>Include additional info:</Text>
+                  
+                  <TouchableOpacity 
+                    style={styles.sharingOption}
+                    onPress={() => setSharingOptions({...sharingOptions, includeRank: !sharingOptions.includeRank})}
+                  >
+                    <View style={[styles.checkbox, sharingOptions.includeRank && styles.checkboxChecked]}>
+                      {sharingOptions.includeRank && <Text style={styles.checkmark}>✓</Text>}
+                    </View>
+                    <Text style={styles.sharingOptionText}>
+                      Include leaderboard rank {selectedChallenge.globalRank ? `(#${selectedChallenge.globalRank})` : ''}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity 
+                    style={styles.sharingOption}
+                    onPress={() => setSharingOptions({...sharingOptions, includeCO2: !sharingOptions.includeCO2})}
+                  >
+                    <View style={[styles.checkbox, sharingOptions.includeCO2 && styles.checkboxChecked]}>
+                      {sharingOptions.includeCO2 && <Text style={styles.checkmark}>✓</Text>}
+                    </View>
+                    <Text style={styles.sharingOptionText}>
+                      Include CO₂ saved {selectedChallenge.co2Saved ? `(${selectedChallenge.co2Saved.toFixed(2)}kg)` : ''}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Platform Selection */}
+                <View style={styles.platformSelection}>
+                  <Text style={styles.platformSelectionTitle}>Choose platform:</Text>
+                  <View style={styles.platformButtons}>
+                    <TouchableOpacity 
+                      style={styles.platformButton}
+                      onPress={() => handleShare('instagram')}
+                    >
+                      <Text style={styles.platformIcon}>📷</Text>
+                      <Text style={styles.platformText}>Instagram</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                      style={styles.platformButton}
+                      onPress={() => handleShare('whatsapp')}
+                    >
+                      <Text style={styles.platformIcon}>💬</Text>
+                      <Text style={styles.platformText}>WhatsApp</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                      style={styles.platformButton}
+                      onPress={() => handleShare('facebook')}
+                    >
+                      <Text style={styles.platformIcon}>👥</Text>
+                      <Text style={styles.platformText}>Facebook</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Close Button */}
+                <TouchableOpacity 
+                  style={styles.sharingCloseButton}
+                  onPress={() => setShowSharingModal(false)}
+                >
+                  <Text style={styles.sharingCloseButtonText}>Maybe Later</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </SafeAreaView>
   );
@@ -599,6 +910,40 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 20,
   },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  addButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 2px 8px rgba(76, 175, 80, 0.3)',
+      },
+      default: {
+        elevation: 4,
+        shadowColor: '#4CAF50',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+    }),
+  },
+  addButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  
+  // Goal Card Styles
   goalCard: {
     backgroundColor: 'white',
     borderRadius: 16,
@@ -619,6 +964,15 @@ const styles = StyleSheet.create({
   goalTitleContainer: {
     flexDirection: 'row',
     flex: 1,
+  },
+  goalIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
   },
   goalIcon: {
     fontSize: 24,
@@ -652,6 +1006,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E0E0E0',
     borderRadius: 4,
     overflow: 'hidden',
+    marginTop: 4,
   },
   progressBarFill: {
     height: '100%',
