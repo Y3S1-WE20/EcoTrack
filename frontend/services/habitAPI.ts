@@ -1,15 +1,10 @@
 // API service for habit tracking
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
+import { authService } from './authAPI';
+import { apiConfig } from './apiConfig';
 
-const getBaseURL = () => {
-  if (Platform.OS === 'web') {
-    return 'http://localhost:4000/api/v1';
-  }
-  // For mobile devices, use the current machine's IP address
-  return 'http://172.20.10.3:4000/api/v1';
-};
-
-const API_BASE_URL = getBaseURL();
+console.log('[HabitAPI] Initializing with smart URL fallback');
 
 export interface Category {
   _id: string;
@@ -103,19 +98,75 @@ export interface ApiResponse<T> {
 }
 
 class HabitAPI {
+  // Helper function to try multiple URLs until one works
+  private async tryRequest<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<Response> {
+    const token = await authService.getToken();
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...options.headers as Record<string, string>,
+    };
+
+    // Add authorization header if token exists
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const requestOptions = {
+      ...options,
+      headers,
+    };
+
+    // Get URLs in smart order (cached working URL first)
+    const orderedUrls = await apiConfig.getOrderedUrls();
+
+    for (const baseUrl of orderedUrls) {
+      try {
+        const url = `${baseUrl}${endpoint}`;
+        console.log(`[HabitAPI] Trying: ${url}`);
+        
+        // Add faster timeout for quicker fallback
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), apiConfig.getTimeout());
+        
+        try {
+          const response = await fetch(url, {
+            ...requestOptions,
+            signal: controller.signal,
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (response.ok) {
+            console.log(`[HabitAPI] Success with: ${baseUrl}`);
+            // Cache this working URL for faster future requests
+            await apiConfig.setWorkingUrl(baseUrl);
+            return response;
+          } else {
+            console.log(`[HabitAPI] Failed with ${baseUrl}: HTTP ${response.status}`);
+          }
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          throw fetchError;
+        }
+      } catch (error) {
+        console.log(`[HabitAPI] Failed with ${baseUrl}:`, error);
+        // Continue to next URL
+      }
+    }
+
+    throw new Error('All API endpoints failed');
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
-        ...options,
-      });
-
+      const response = await this.tryRequest(endpoint, options);
       const data = await response.json();
 
       if (!response.ok) {
@@ -145,14 +196,13 @@ class HabitAPI {
     }
   }
 
-  // Get today's impact data for a user
-  async getTodayImpact(userId: string): Promise<ApiResponse<TodayData>> {
-    return this.request<TodayData>(`/habits/today/${userId}`);
+  // Get today's impact data for current user (authenticated)
+  async getTodayImpact(): Promise<ApiResponse<TodayData>> {
+    return this.request<TodayData>('/habits/today');
   }
 
-  // Add a new habit log
+  // Add a new habit log (authenticated)
   async addHabitLog(habitData: {
-    userId: string;
     activityId: string;
     quantity: number;
     notes?: string;
@@ -165,19 +215,18 @@ class HabitAPI {
     });
   }
 
-  // Get all categories
+  // Get all categories (public)
   async getCategories(): Promise<ApiResponse<Category[]>> {
     return this.request<Category[]>('/habits/categories');
   }
 
-  // Get activities by category
+  // Get activities by category (public)
   async getActivitiesByCategory(categoryId: string): Promise<ApiResponse<Activity[]>> {
     return this.request<Activity[]>(`/habits/activities/${categoryId}`);
   }
 
-  // Get user's activity history
+  // Get current user's activity history (authenticated)
   async getActivityHistory(
-    userId: string,
     params?: {
       page?: number;
       limit?: number;
@@ -197,13 +246,13 @@ class HabitAPI {
 
     const queryString = searchParams.toString();
     return this.request<{ activities: HabitLog[]; pagination: any }>(
-      `/habits/history/${userId}${queryString ? `?${queryString}` : ''}`
+      `/habits/history${queryString ? `?${queryString}` : ''}`
     );
   }
 
-  // Get weekly statistics
-  async getWeeklyStats(userId: string): Promise<ApiResponse<any>> {
-    return this.request<any>(`/habits/stats/weekly/${userId}`);
+  // Get weekly statistics for current user (authenticated)
+  async getWeeklyStats(): Promise<ApiResponse<any>> {
+    return this.request<any>('/habits/stats/weekly');
   }
 
   // Get monthly statistics

@@ -5,7 +5,8 @@ import { SymbolWeight, SymbolViewProps } from 'expo-symbols';
 import { ComponentProps } from 'react';
 import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native';
 
-type IconMapping = Record<SymbolViewProps['name'], ComponentProps<typeof MaterialIcons>['name']>;
+// Use a permissive mapping so we can map SF symbol names to Material icon names.
+type IconMapping = Record<string, string>;
 type IconSymbolName = keyof typeof MAPPING;
 
 /**
@@ -18,6 +19,25 @@ const MAPPING = {
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
+  'message.fill': 'chat',
+  'flag.fill': 'flag',
+  'safari.fill': 'explore',
+  'person.fill': 'person',
+  'target': 'track_changes',
+  'star.fill': 'star',
+  'app.fill': 'apps',
+  'doc.text': 'description',
+  'plus': 'add',
+  'mic': 'mic',
+  'camera': 'photo-camera',
+  'doc': 'description',
+  'sun.max.fill': 'wb_sunny',
+  'moon.fill': 'dark_mode',
+  'gearshape.fill': 'settings',
+  'chart.bar': 'bar-chart',
+  'bell.fill': 'notifications',
+  'logout': 'logout',
+  'refresh': 'refresh',
 } as IconMapping;
 
 /**
@@ -37,5 +57,7 @@ export function IconSymbol({
   style?: StyleProp<TextStyle>;
   weight?: SymbolWeight;
 }) {
-  return <MaterialIcons color={color} size={size} name={MAPPING[name]} style={style} />;
+  // MaterialIcons expects a specific union of names; cast after lookup.
+  const materialName = MAPPING[name] as ComponentProps<typeof MaterialIcons>['name'];
+  return <MaterialIcons color={color} size={size} name={materialName} style={style} />;
 }

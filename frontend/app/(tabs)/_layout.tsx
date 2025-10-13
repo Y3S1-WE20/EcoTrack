@@ -3,43 +3,59 @@ import React from 'react';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import CustomTabBar from '@/components/CustomTabBar';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const { theme } = useAppTheme();
 
   return (
     <Tabs
       tabBar={(props) => <CustomTabBar {...props} />}
       initialRouteName="habits"
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: theme.primary,
         headerShown: false,
         tabBarButton: HapticTab,
       }}>
+      
+      {/* Home/Habits page should be first */}
       <Tabs.Screen
         name="habits"
         options={{
-          title: 'Habits',
+          title: 'Home',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
         }}
       />
+      
+      {/* Phase 2: Carbon Footprint Chatbot */}
       <Tabs.Screen
         name="assistant"
         options={{
-          title: 'Assistant',
+          title: 'AI Assistant',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="message.fill" color={color} />,
         }}
       />
+      
+      {/* Goals page */}
       <Tabs.Screen
         name="goals"
         options={{
           title: 'Goals',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chart.bar.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="target" color={color} />,
         }}
       />
+      
+      {/* Motivation Hub */}
+      <Tabs.Screen
+        name="motivation"
+        options={{
+          title: 'Motivation',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="star.fill" color={color} />,
+        }}
+      />
+      
+      {/* Profile for onboarding */}
       <Tabs.Screen
         name="profile"
         options={{
@@ -47,6 +63,8 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
         }}
       />
+      
+      {/* Explore page */}
       <Tabs.Screen
         name="motivations"
         options={{
@@ -57,11 +75,13 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          href: null, // Hide this tab
+          href: null, // Hide from main tabs - accessed through other means
         }}
       />
+      
+      {/* Hide default index */}
       <Tabs.Screen
-        name="explore"
+        name="index"
         options={{
           href: null, // Hide this tab
         }}

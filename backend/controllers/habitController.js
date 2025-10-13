@@ -11,7 +11,7 @@ const calculateCO2Impact = (activity, quantity) => {
 // Get today's impact for a user
 const getTodayImpact = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = req.user.userId; // Get from authenticated user
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
@@ -82,13 +82,14 @@ const getTodayImpact = async (req, res) => {
 // Add a new habit log
 const addHabitLog = async (req, res) => {
   try {
-    const { userId, activityId, quantity, notes, voiceNote, photo } = req.body;
+    const { activityId, quantity, notes, voiceNote, photo } = req.body;
+    const userId = req.user.userId; // Get from authenticated user
 
     // Validate required fields
-    if (!userId || !activityId || quantity === undefined) {
+    if (!activityId || quantity === undefined) {
       return res.status(400).json({
         success: false,
-        error: 'User ID, activity ID, and quantity are required'
+        error: 'Activity ID and quantity are required'
       });
     }
 
@@ -196,7 +197,7 @@ const getCategories = async (req, res) => {
 // Get user's activity history
 const getActivityHistory = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = req.user.userId; // Get from authenticated user
     const { page = 1, limit = 20, category, startDate, endDate } = req.query;
 
     // Build filter
@@ -244,7 +245,7 @@ const getActivityHistory = async (req, res) => {
 // Get weekly statistics
 const getWeeklyStats = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = req.user.userId; // Get from authenticated user
     const today = new Date();
     const weekStart = new Date(today);
     weekStart.setDate(today.getDate() - today.getDay());

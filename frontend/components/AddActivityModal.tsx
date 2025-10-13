@@ -17,7 +17,6 @@ interface AddActivityModalProps {
   visible: boolean;
   onClose: () => void;
   onActivityAdded: () => void;
-  userId: string;
 }
 
 const { width } = Dimensions.get('window');
@@ -26,7 +25,6 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   visible,
   onClose,
   onActivityAdded,
-  userId,
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -136,34 +134,15 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
 
     try {
       setLoading(true);
-      
-      if (isCustomActivity) {
-        // For custom activities, use the "Custom Activity" from Other category
-        // and include custom details in notes
-        const otherCategoryActivity = activities.find(a => a.name === 'Custom Activity');
-        if (!otherCategoryActivity) {
-          Alert.alert('Error', 'Custom activity template not found');
-          return;
-        }
+      const response = await habitAPI.addHabitLog({
+        activityId: selectedActivity._id,
+        quantity,
+        notes: notes.trim() || undefined,
+      });
 
-        const customNotes = `Custom Activity: ${customActivity.name}
-Description: ${customActivity.description || 'No description'}
-CO₂ Impact: ${customActivity.co2PerUnit} kg per ${customActivity.unitLabel}
-${notes.trim() ? `Additional Notes: ${notes.trim()}` : ''}`;
-
-        const response = await habitAPI.addHabitLog({
-          userId,
-          activityId: otherCategoryActivity._id,
-          quantity,
-          notes: customNotes,
-        });
-
-        if (response.success) {
-          onActivityAdded();
-          Alert.alert('Success', 'Custom activity added successfully!');
-        } else {
-          Alert.alert('Error', response.error || 'Failed to add custom activity');
-        }
+      if (response.success) {
+        onActivityAdded();
+        Alert.alert('Success', 'Activity added successfully!');
       } else {
         // Regular activity submission
         const response = await habitAPI.addHabitLog({
