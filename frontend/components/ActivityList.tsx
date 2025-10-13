@@ -7,6 +7,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
+import { IconSymbol } from '../components/ui/icon-symbol';
 import { HabitLog, habitAPI } from '../services/habitAPI';
 import HistoryTab from './HistoryTab';
 
@@ -26,6 +27,36 @@ const ActivityList: React.FC<ActivityListProps> = ({ activities, onRefresh, user
       minute: '2-digit',
       hour12: false,
     });
+  };
+
+  const getActivityIcon = (activityName: string) => {
+    const name = activityName.toLowerCase();
+    if (name.includes('heating') || name.includes('oil')) return 'flame.fill';
+    if (name.includes('gas') || name.includes('natural')) return 'flame';
+    if (name.includes('car') || name.includes('gasoline') || name.includes('transport')) return 'car.fill';
+    if (name.includes('electricity') || name.includes('electric')) return 'bolt.fill';
+    if (name.includes('water')) return 'drop.fill';
+    if (name.includes('waste') || name.includes('trash')) return 'trash.fill';
+    return 'leaf.fill';
+  };
+
+  const getActivityColor = (activityName: string) => {
+    const name = activityName.toLowerCase();
+    if (name.includes('heating') || name.includes('oil')) return '#FF6B35';
+    if (name.includes('gas') || name.includes('natural')) return '#FFA726';
+    if (name.includes('car') || name.includes('gasoline') || name.includes('transport')) return '#EF5350';
+    if (name.includes('electricity') || name.includes('electric')) return '#42A5F5';
+    if (name.includes('water')) return '#26C6DA';
+    if (name.includes('waste') || name.includes('trash')) return '#AB47BC';
+    return '#66BB6A';
+  };
+
+  const getCategoryName = (category: any) => {
+    if (!category) return 'General';
+    if (typeof category === 'string') return category;
+    if (category.name) return category.name;
+    if (category._id) return 'Category';
+    return String(category);
   };
 
   const handleDeleteActivity = async (logId: string) => {
@@ -62,7 +93,9 @@ const ActivityList: React.FC<ActivityListProps> = ({ activities, onRefresh, user
       return (
         <View key={activity._id} style={styles.activityCard}>
           <View style={styles.activityMain}>
-            <Text style={styles.activityIcon}>❓</Text>
+            <View style={[styles.activityIconContainer, { backgroundColor: '#E0E0E0' }]}>
+              <IconSymbol size={20} name="questionmark" color="#757575" />
+            </View>
             <View style={styles.activityInfo}>
               <Text style={styles.activityName}>Unknown Activity</Text>
               <Text style={styles.activityDetails}>
@@ -74,10 +107,17 @@ const ActivityList: React.FC<ActivityListProps> = ({ activities, onRefresh, user
             </View>
             <View style={styles.activityImpact}>
               <Text style={styles.impactValue}>
-                {activity.co2Impact?.toFixed(1) || '0.0'} kg CO₂
+                {activity.co2Impact?.toFixed(1) || '0.0'}
               </Text>
+              <Text style={styles.impactUnit}>kg CO₂</Text>
             </View>
           </View>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => handleDeleteActivity(activity._id)}
+          >
+            <IconSymbol size={16} name="trash.fill" color="#EF5350" />
+          </TouchableOpacity>
         </View>
       );
     }
@@ -85,7 +125,13 @@ const ActivityList: React.FC<ActivityListProps> = ({ activities, onRefresh, user
     return (
       <View key={activity._id} style={styles.activityCard}>
         <View style={styles.activityMain}>
-          <Text style={styles.activityIcon}>{activity.activity.icon}</Text>
+          <View style={[styles.activityIconContainer, { backgroundColor: getActivityColor(activity.activity.name) + '20' }]}>
+            <IconSymbol 
+              size={20} 
+              name={getActivityIcon(activity.activity.name) as any} 
+              color={getActivityColor(activity.activity.name)} 
+            />
+          </View>
           <View style={styles.activityInfo}>
             <Text style={styles.activityName}>{activity.activity.name}</Text>
             <Text style={styles.activityDetails}>
@@ -97,8 +143,9 @@ const ActivityList: React.FC<ActivityListProps> = ({ activities, onRefresh, user
           </View>
           <View style={styles.activityImpact}>
             <Text style={styles.impactValue}>
-              {activity.co2Impact.toFixed(1)} kg CO₂
+              {activity.co2Impact.toFixed(1)}
             </Text>
+            <Text style={styles.impactUnit}>kg CO₂</Text>
           </View>
         </View>
         
@@ -106,7 +153,7 @@ const ActivityList: React.FC<ActivityListProps> = ({ activities, onRefresh, user
           style={styles.deleteButton}
           onPress={() => handleDeleteActivity(activity._id)}
         >
-          <Text style={styles.deleteButtonText}>Delete</Text>
+          <IconSymbol size={16} name="trash.fill" color="#EF5350" />
         </TouchableOpacity>
       </View>
     );
@@ -120,7 +167,11 @@ const ActivityList: React.FC<ActivityListProps> = ({ activities, onRefresh, user
           style={[styles.tab, activeTab === 'today' && styles.activeTab]}
           onPress={() => setActiveTab('today')}
         >
-          <Text style={styles.tabIcon}>📅</Text>
+          <IconSymbol 
+            size={16} 
+            name="calendar" 
+            color={activeTab === 'today' ? '#FFFFFF' : '#666'} 
+          />
           <Text
             style={[styles.tabText, activeTab === 'today' && styles.activeTabText]}
           >
@@ -131,7 +182,11 @@ const ActivityList: React.FC<ActivityListProps> = ({ activities, onRefresh, user
           style={[styles.tab, activeTab === 'history' && styles.activeTab]}
           onPress={() => setActiveTab('history')}
         >
-          <Text style={styles.tabIcon}>📈</Text>
+          <IconSymbol 
+            size={16} 
+            name="chart.bar.fill" 
+            color={activeTab === 'history' ? '#FFFFFF' : '#666'} 
+          />
           <Text
             style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}
           >
@@ -175,15 +230,15 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 12,
     padding: 4,
     marginBottom: 16,
-    elevation: 2,
+    elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 8,
   },
   tab: {
     flex: 1,
@@ -195,7 +250,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   activeTab: {
-    backgroundColor: '#212121',
+    backgroundColor: '#4CAF50',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   tabIcon: {
     fontSize: 16,
@@ -203,7 +263,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#666',
   },
   activeTabText: {
@@ -213,20 +273,21 @@ const styles = StyleSheet.create({
     minHeight: 200,
   },
   activityCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(146, 146, 146, 0.14)',
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    padding: 12,
+    marginBottom: 8,
+    marginHorizontal: 4,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
     shadowRadius: 4,
   },
   activityMain: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 6,
   },
   activityIcon: {
     fontSize: 24,
@@ -236,15 +297,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   activityName: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: '600',
     color: '#212121',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   activityDetails: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#666',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   activityNotes: {
     fontSize: 12,
@@ -257,18 +318,37 @@ const styles = StyleSheet.create({
   impactValue: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#F44336',
+    color: '#EF5350',
+  },
+  impactUnit: {
+    fontSize: 10,
+    color: '#666',
+    marginTop: 1,
+  },
+  activityIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  activityCategory: {
+    fontSize: 11,
+    color: '#4CAF50',
+    fontWeight: '500',
+    textTransform: 'uppercase',
   },
   deleteButton: {
     alignSelf: 'flex-end',
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     paddingVertical: 6,
-    backgroundColor: '#FFEBEE',
+    backgroundColor: 'rgba(239, 83, 80, 0.08)',
     borderRadius: 6,
   },
   deleteButtonText: {
     fontSize: 12,
-    color: '#F44336',
+    color: '#EF5350',
     fontWeight: '500',
   },
   emptyState: {

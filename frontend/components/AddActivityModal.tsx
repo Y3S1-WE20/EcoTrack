@@ -400,16 +400,6 @@ ${notes.trim() ? `Additional Notes: ${notes.trim()}` : ''}`;
             </View>
           </View>
 
-          <Text style={styles.notesLabel}>Voice Note</Text>
-          <View style={styles.notesRow}>
-            <TouchableOpacity style={styles.voiceButton}>
-              <Text style={styles.voiceIcon}>🎤</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.photoButton}>
-              <Text style={styles.photoIcon}>📷</Text>
-            </TouchableOpacity>
-          </View>
-
           <TouchableOpacity
             style={styles.addButton}
             onPress={handleSubmit}
@@ -691,31 +681,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#212121',
     marginBottom: 12,
-  },
-  notesRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
-  },
-  voiceButton: {
-    backgroundColor: '#F5F5F5',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    flex: 1,
-  },
-  voiceIcon: {
-    fontSize: 24,
-  },
-  photoButton: {
-    backgroundColor: '#F5F5F5',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    flex: 1,
-  },
-  photoIcon: {
-    fontSize: 24,
   },
   addButton: {
     backgroundColor: '#212121',

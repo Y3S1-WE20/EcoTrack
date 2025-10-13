@@ -9,9 +9,12 @@ import {
   TextInput, 
   Alert,
   Dimensions,
-  Share 
+  Share,
+  Platform 
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { IconSymbol } from '../../components/ui/icon-symbol';
 import { habitAPI, HabitLog, TodayData } from '../../services/habitAPI';
 
 const screenWidth = Dimensions.get('window').width;
@@ -90,6 +93,19 @@ const GoalsScreen = () => {
   
   // For demo purposes, using a fixed user ID - in real app, get from auth
   const userId = 'testuser';
+  
+  // Helper function to get appropriate icon for goals
+  const getGoalIcon = (goalName: string): any => {
+    const name = goalName.toLowerCase();
+    if (name.includes('weekly') || name.includes('co2') || name.includes('carbon')) return 'leaf.fill';
+    if (name.includes('monthly') || name.includes('activity')) return 'chart.bar.fill';
+    if (name.includes('daily') || name.includes('eco')) return 'sparkles';
+    if (name.includes('transport') || name.includes('travel')) return 'car.fill';
+    if (name.includes('energy') || name.includes('power')) return 'bolt.fill';
+    if (name.includes('water')) return 'drop.fill';
+    if (name.includes('waste')) return 'trash.fill';
+    return 'target';
+  };
   
   // State for new goal creation
   const [newGoal, setNewGoal] = useState({
@@ -961,17 +977,21 @@ const GoalsScreen = () => {
   const renderTabBar = () => (
     <View style={styles.tabBar}>
       {[
-        { key: 'goals', label: 'Goals', icon: '🎯' },
-        { key: 'achievements', label: 'Badges', icon: '🏆' },
-        { key: 'challenges', label: 'Social', icon: '👥' },
-        { key: 'reports', label: 'Reports', icon: '📊' }
+        { key: 'goals', label: 'Goals', icon: 'target' },
+        { key: 'achievements', label: 'Badges', icon: 'trophy.fill' },
+        { key: 'challenges', label: 'Social', icon: 'person.3.fill' },
+        { key: 'reports', label: 'Reports', icon: 'chart.bar.fill' }
       ].map((tab) => (
         <TouchableOpacity
           key={tab.key}
           style={[styles.tabItem, activeTab === tab.key && styles.activeTabItem]}
           onPress={() => setActiveTab(tab.key as any)}
         >
-          <Text style={styles.tabIcon}>{tab.icon}</Text>
+          <IconSymbol 
+            size={20} 
+            name={tab.icon as any} 
+            color={activeTab === tab.key ? '#FFFFFF' : '#666'} 
+          />
           <Text style={[styles.tabLabel, activeTab === tab.key && styles.activeTabLabel]}>
             {tab.label}
           </Text>
@@ -988,14 +1008,21 @@ const GoalsScreen = () => {
           style={styles.addButton}
           onPress={() => setShowCreateGoal(true)}
         >
-          <Text style={styles.addButtonText}>+ Add Goal</Text>
+          <IconSymbol size={16} name="plus" color="#FFFFFF" />
+          <Text style={styles.addButtonText}>Add Goal</Text>
         </TouchableOpacity>
       </View>
 
       {goals.map((goal) => (
         <View key={goal.id} style={styles.goalCard}>
           <View style={styles.goalHeader}>
-            <Text style={styles.goalIcon}>{goal.icon}</Text>
+            <View style={styles.goalIconContainer}>
+              <IconSymbol 
+                size={24} 
+                name={getGoalIcon(goal.name)} 
+                color={goal.color} 
+              />
+            </View>
             <View style={styles.goalInfo}>
               <Text style={styles.goalName}>{goal.name}</Text>
               <Text style={styles.goalStatus}>
@@ -1392,21 +1419,44 @@ const GoalsScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.content}>
-          <Text style={styles.title}>🎯 Goals & Achievements</Text>
-          <Text style={styles.subtitle}>
-            Set targets and track your progress towards a greener lifestyle
-          </Text>
+      {/* Fixed Header with Gradient */}
+      <LinearGradient
+        colors={['#00E676', '#4CAF50', '#2E7D32']}
+        style={styles.headerGradient}
+      >
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.title}>Goals & Achievements</Text>
+              <Text style={styles.subtitle}>
+                Track your progress towards a greener lifestyle
+              </Text>
+            </View>
+            <View style={styles.headerIcon}>
+              <IconSymbol size={32} name="target" color="rgba(255, 255, 255, 0.9)" />
+            </View>
+          </View>
+        </View>
+      </LinearGradient>
 
+      {/* Fixed Tab Navigation */}
+      <View style={styles.fixedTabContainer}>
+        {renderTabBar()}
+      </View>
+
+      {/* Scrollable Content */}
+      <ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.content}>
           {loading ? (
             <View style={styles.loadingContainer}>
               <Text style={styles.loadingText}>Loading your progress...</Text>
             </View>
           ) : (
             <>
-              {renderTabBar()}
-
               {activeTab === 'goals' && renderGoalsTab()}
               {activeTab === 'achievements' && renderAchievementsTab()}
               {activeTab === 'challenges' && renderChallengesTab()}
@@ -1724,13 +1774,45 @@ const GoalsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F8FFFE',
   },
   scrollView: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: 100, // Extra padding for safe scrolling
+  },
+  headerGradient: {
+    paddingBottom: 24,
+    zIndex: 1000,
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 16,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerTextContainer: {
+    flex: 1,
+  },
+  headerIcon: {
+    marginLeft: 16,
+  },
+  fixedTabContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#F8FFFE',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
+    zIndex: 999,
+  },
   content: {
     padding: 20,
+    paddingTop: 0,
   },
   loadingContainer: {
     flex: 1,
@@ -1744,30 +1826,35 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#212121',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
-    marginBottom: 24,
+    color: 'rgba(255, 255, 255, 0.9)',
     lineHeight: 22,
   },
   
   // Tab Bar Styles
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 16,
     padding: 4,
-    marginBottom: 24,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.1)',
+      },
+      default: {
+        elevation: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+      },
+    }),
   },
   tabItem: {
     flex: 1,
@@ -1775,9 +1862,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 12,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
   },
   activeTabItem: {
     backgroundColor: '#4CAF50',
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 2px 8px rgba(76, 175, 80, 0.3)',
+      },
+      default: {
+        elevation: 4,
+        shadowColor: '#4CAF50',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+    }),
   },
   tabIcon: {
     fontSize: 16,
@@ -1816,8 +1918,23 @@ const styles = StyleSheet.create({
   addButton: {
     backgroundColor: '#4CAF50',
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 2px 8px rgba(76, 175, 80, 0.3)',
+      },
+      default: {
+        elevation: 4,
+        shadowColor: '#4CAF50',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+    }),
   },
   addButtonText: {
     color: '#FFFFFF',
@@ -1827,20 +1944,36 @@ const styles = StyleSheet.create({
   
   // Goal Card Styles
   goalCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 20,
     padding: 20,
     marginBottom: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.1)',
+      },
+      default: {
+        elevation: 6,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+    }),
   },
   goalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
+  },
+  goalIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
   },
   goalIcon: {
     fontSize: 24,
@@ -1871,15 +2004,16 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   progressBar: {
-    height: 8,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 4,
+    height: 10,
+    backgroundColor: 'rgba(224, 224, 224, 0.6)',
+    borderRadius: 5,
     overflow: 'hidden',
+    marginTop: 4,
   },
   progressFill: {
     height: '100%',
     backgroundColor: '#4CAF50',
-    borderRadius: 4,
+    borderRadius: 5,
   },
   
   // Achievement Styles
@@ -1889,17 +2023,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   achievementBadge: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 20,
     padding: 16,
     width: (screenWidth - 56) / 2,
     marginBottom: 16,
     alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.08)',
+      },
+      default: {
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+    }),
     opacity: 0.5,
   },
   unlockedBadge: {

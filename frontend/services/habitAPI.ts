@@ -6,7 +6,7 @@ const getBaseURL = () => {
     return 'http://localhost:4000/api/v1';
   }
   // For mobile devices, use the current machine's IP address
-  return 'http://192.168.43.8:4000/api/v1';
+  return 'http://172.20.10.3:4000/api/v1';
 };
 
 const API_BASE_URL = getBaseURL();
