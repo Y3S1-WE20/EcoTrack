@@ -22,6 +22,7 @@ import { habitAPI, TodayData } from '../services/habitAPI';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { IconSymbol } from './ui/icon-symbol';
+import Header from './Header';
 
 const HabitsScreen = () => {
   const [todayData, setTodayData] = useState<TodayData | null>(null);
@@ -166,32 +167,9 @@ const HabitsScreen = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
       
-      <LinearGradient
-        colors={['#4CAF50', '#2E7D32']}
-        style={styles.gradientContainer}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <View style={styles.leafIcon}>
-              <Text style={styles.leafEmoji}>🌿</Text>
-            </View>
-            <View>
-              <Text style={styles.headerTitle}>EcoTracker</Text>
-              <Text style={styles.headerSubtitle}>Track your carbon footprint</Text>
-            </View>
-          </View>
-          <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.notificationIcon}>
-              <IconSymbol name="bell" size={24} color="white" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.profileIcon}>
-              <IconSymbol name="person" size={24} color="white" />
-            </TouchableOpacity>
-          </View>
-        </View>
+      <Header title="EcoTracker" subtitle="Track your carbon footprint" rightIcon="bell" />
 
-        {/* CO2 Impact Badge and Day Counter */}
+      <LinearGradient colors={['#4CAF50', '#2E7D32']} style={styles.gradientContainer}>
         <View style={styles.badgeContainer}>
           <View style={styles.impactBadge}>
             <View style={styles.badgeIcon}>
@@ -260,39 +238,12 @@ const HabitsScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Activity List */}
-        <ScrollView
-          style={styles.activityScrollView}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
-          showsVerticalScrollIndicator={false}
-        >
-          {todayData?.activities?.map((activity, index) => (
-            <View key={activity._id || index} style={styles.activityItem}>
-              <View style={styles.activityIcon}>
-                <Text style={styles.activityEmoji}>
-                  {activity.activity.name === 'Walking' ? '🚶' : '🚗'}
-                </Text>
-              </View>
-              <View style={styles.activityDetails}>
-                <Text style={styles.activityType}>{activity.activity.name}</Text>
-                <Text style={styles.activityAmount}>
-                  {activity.quantity} {activity.activity.unit} • {new Date(activity.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                </Text>
-              </View>
-              <View style={styles.activityImpact}>
-                <Text style={styles.impactValue}>
-                  {activity.co2Impact.toFixed(1)}
-                </Text>
-                <Text style={styles.impactUnit}>kg CO₂</Text>
-              </View>
-              <TouchableOpacity style={styles.deleteButton}>
-                <IconSymbol name="trash" size={20} color="#FF5252" />
-              </TouchableOpacity>
-            </View>
-          ))}
-        </ScrollView>
+        {/* Activity List (use reusable component) */}
+        <ActivityList
+          activities={todayData?.activities || []}
+          onRefresh={handleRefresh}
+          activeTab={activeTab === 'today' ? 'today' : 'history'}
+        />
       </View>
 
       {/* Add Activity Button */}

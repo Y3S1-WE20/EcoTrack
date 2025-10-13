@@ -149,4 +149,71 @@ export const profileAPI = {
       throw error;
     }
   },
+
+  // Gamification endpoints
+  getLeaderboard: async () => {
+    try {
+      console.log('Fetching leaderboard...');
+      const response = await makeAuthenticatedRequest('/profile/leaderboard');
+      console.log('Leaderboard response:', response);
+      return response;
+    } catch (error) {
+      console.error('Failed to fetch leaderboard:', error);
+      throw error;
+    }
+  },
+
+  getWeeklyReport: async () => {
+    try {
+      console.log('Fetching weekly report...');
+      const response = await makeAuthenticatedRequest('/profile/report/weekly');
+      console.log('Weekly report response:', response);
+      return response;
+    } catch (error) {
+      console.error('Failed to fetch weekly report:', error);
+      throw error;
+    }
+  },
+
+  shareAchievement: async (badgeId: string) => {
+    try {
+      console.log('Sharing achievement:', badgeId);
+      const response = await makeAuthenticatedRequest('/profile/share', {
+        method: 'POST',
+        body: JSON.stringify({ badgeId }),
+      });
+      console.log('Share response:', response);
+      return response;
+    } catch (error) {
+      console.error('Failed to share achievement:', error);
+      throw error;
+    }
+  },
+
+  setWeeklyGoal: async (targetKg: number) => {
+    try {
+      console.log('Setting weekly goal:', targetKg);
+      const response = await makeAuthenticatedRequest('/profile/goal/weekly', {
+        method: 'PUT',
+        body: JSON.stringify({ targetKg }),
+      });
+      console.log('Set weekly goal response:', response);
+      return response;
+    } catch (error) {
+      console.error('Failed to set weekly goal:', error);
+      throw error;
+    }
+  },
+
+  getRecommendations: async () => {
+    try {
+      console.log('Fetching recommendations...');
+      const response = await makeAuthenticatedRequest('/profile/recommendations');
+      console.log('Recommendations response:', response);
+      return response;
+    } catch (error) {
+      console.error('Failed to fetch recommendations:', error);
+      throw error;
+    }
+  },
 };

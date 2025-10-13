@@ -2,6 +2,8 @@ const HabitLog = require('../models/HabitLog');
 const Activity = require('../models/Activity');
 const Category = require('../models/Category');
 const UserGoal = require('../models/UserGoal');
+const User = require('../models/User');
+const badgeService = require('../services/badgeService');
 
 // Helper function to calculate CO2 impact
 const calculateCO2Impact = (activity, quantity) => {
@@ -121,6 +123,79 @@ const addHabitLog = async (req, res) => {
     await habitLog.save();
     await habitLog.populate('activity category');
 
+    // Update basic user stats: activities logged, last activity date, streak
+    try {
+      const user = await User.findById(userId);
+      if (user) {
+        const now = new Date();
+        const lastDate = user.stats?.lastActivityDate ? new Date(user.stats.lastActivityDate) : null;
+
+        // increment activitiesLogged
+        user.stats = user.stats || {};
+        user.stats.activitiesLogged = (user.stats.activitiesLogged || 0) + 1;
+
+        // update totalCo2Saved if applicable (if activity reduces CO2)
+        // assume positive co2Impact means emitted, negative could be saved
+        if (typeof habitLog.co2Impact === 'number' && habitLog.co2Impact < 0) {
+          user.stats.totalCo2Saved = (user.stats.totalCo2Saved || 0) + Math.abs(habitLog.co2Impact);
+        }
+
+        // streak handling: if last activity was yesterday or today increment, else reset
+        if (lastDate) {
+          const yesterday = new Date();
+          yesterday.setDate(now.getDate() - 1);
+          yesterday.setHours(0,0,0,0);
+          const lastDay = new Date(lastDate);
+          lastDay.setHours(0,0,0,0);
+
+          if (lastDay.getTime() === yesterday.getTime()) {
+            user.stats.streakDays = (user.stats.streakDays || 0) + 1;
+          } else if (lastDay.getTime() === now.setHours(0,0,0,0)) {
+            // already counted today
+          } else {
+            user.stats.streakDays = 1;
+          }
+        } else {
+          user.stats.streakDays = 1;
+        }
+
+        user.stats.lastActivityDate = new Date();
+        await user.save();
+      }
+    } catch (err) {
+      console.error('Failed to update user stats after logging activity:', err);
+    }
+
+    // Check and award badges for this user related to the new habit log
+    let newlyEarned = [];
+    try {
+      newlyEarned = await badgeService.checkBadges(userId, habitLog);
+
+      // If any newly earned badges returned as objects, persist them on the user profile
+      if (newlyEarned && newlyEarned.length > 0) {
+        const user = await User.findById(userId);
+        if (user) {
+          for (const nb of newlyEarned) {
+            const badgeObj = nb.badge || nb; // badgeService may return nested object
+            const id = badgeObj._id || badgeObj.id || badgeObj.name;
+            if (!user.badges.some(b => b.id === id || b._id === id)) {
+              user.badges = user.badges || [];
+              user.badges.push({
+                id: id,
+                name: badgeObj.name || badgeObj.title || badgeObj.id,
+                description: badgeObj.description || '',
+                icon: badgeObj.icon || '🏆',
+                category: badgeObj.category || 'overall',
+                earnedAt: new Date()
+              });
+            }
+          }
+          await user.save();
+        }
+      }
+    } catch (err) {
+      console.error('Badge awarding failed:', err);
+    }
     // Update weekly goal progress
     const today = new Date();
     const weekStart = new Date(today);
@@ -142,7 +217,8 @@ const addHabitLog = async (req, res) => {
     res.status(201).json({
       success: true,
       data: habitLog,
-      message: 'Activity added successfully'
+      message: 'Activity added successfully',
+      newBadges: newlyEarned
     });
   } catch (error) {
     console.error('Add habit log error:', error);

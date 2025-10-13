@@ -9,13 +9,21 @@ import {
   ActivityIndicator,
   RefreshControl,
   Dimensions,
+  TextInput,
+  Modal,
+  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import Header from '@/components/Header';
 import { useAuth } from '@/contexts/AuthContext';
 import { profileAPI } from '@/services/profileAPI';
+import { getCommunityPosts, CommunityPost } from '@/services/motivationAPI';
+import { habitAPI } from '@/services/habitAPI';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useRouter } from 'expo-router';
+import { INITIAL_BADGES } from '@/data/quizData';
 
 interface Goal {
   id: string;
@@ -32,10 +40,18 @@ interface Goal {
 export default function GoalsScreen() {
   const { theme } = useAppTheme();
   const { user } = useAuth();
+  const router = useRouter();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('goals');
+  const [badges, setBadges] = useState<any[]>([]);
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [reports, setReports] = useState<any | null>(null);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [weeklyGoal, setWeeklyGoal] = useState<number>(50);
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [newGoalInput, setNewGoalInput] = useState('');
 
   useEffect(() => {
     loadGoals();
@@ -49,13 +65,13 @@ export default function GoalsScreen() {
         {
           id: '1',
           title: 'Weekly CO₂ Target',
-          description: 'Keep weekly carbon emissions under 50kg',
-          targetValue: 50,
+          description: 'Keep weekly carbon emissions under your goal',
+          targetValue: weeklyGoal,
           currentValue: 22.91,
           unit: 'kg CO₂',
           deadline: '2024-12-31',
           category: 'carbon',
-          progress: 46,
+          progress: Math.round((22.91 / weeklyGoal) * 100),
         },
         {
           id: '2',
@@ -82,6 +98,55 @@ export default function GoalsScreen() {
       ];
       
       setGoals(mockGoals);
+
+      // Load user profile and badges
+      try {
+        const profileResp = await profileAPI.getProfile();
+        if (profileResp && profileResp.success && profileResp.data) {
+          const profile = profileResp.data;
+          if (profile.user && profile.user.badges) {
+            setBadges(profile.user.badges);
+          } else if (profile.badges) {
+            setBadges(profile.badges);
+          } else {
+            setBadges(INITIAL_BADGES || []);
+          }
+          
+          // Get weekly goal from profile
+          if (profile.user && profile.user.carbonProfile && profile.user.carbonProfile.goals) {
+            setWeeklyGoal(profile.user.carbonProfile.goals.weekly || 50);
+          }
+        }
+      } catch (e) {
+        setBadges(INITIAL_BADGES || []);
+      }
+
+      // Load leaderboard
+      try {
+        const leaderboardResp = await profileAPI.getLeaderboard();
+        if (leaderboardResp && leaderboardResp.success && leaderboardResp.data) {
+          setLeaderboard(leaderboardResp.data);
+        }
+      } catch (e) {
+        console.log('Failed to load leaderboard:', e);
+      }
+
+      // Load community posts
+      try {
+        const postsResp: any = await getCommunityPosts(1, 10);
+        if (postsResp && postsResp.success && postsResp.data) {
+          setPosts(postsResp.data.posts || postsResp.data);
+        }
+      } catch (e) {}
+
+      // Load weekly report
+      try {
+        const reportResp = await profileAPI.getWeeklyReport();
+        if (reportResp && reportResp.success && reportResp.data) {
+          setReports(reportResp.data);
+        }
+      } catch (e) {}
+
     } catch (error) {
       console.error('Failed to load goals:', error);
       Alert.alert('Error', 'Failed to load your goals. Please try again.');
@@ -94,6 +159,42 @@ export default function GoalsScreen() {
     setIsRefreshing(true);
     await loadGoals();
     setIsRefreshing(false);
+  };
+
+  const handleSetWeeklyGoal = async () => {
+    const target = parseFloat(newGoalInput);
+    if (isNaN(target) || target <= 0) {
+      Alert.alert('Invalid Goal', 'Please enter a valid number greater than 0');
+      return;
+    }
+
+    try {
+      const response = await profileAPI.setWeeklyGoal(target);
+      if (response.success) {
+        setWeeklyGoal(target);
+        setShowGoalModal(false);
+        setNewGoalInput('');
+        Alert.alert('Success', `Weekly goal set to ${target} kg CO₂`);
+        await loadGoals(); // Refresh to update progress
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to set weekly goal');
+    }
+  };
+
+  const handleShareBadge = async (badgeId: string) => {
+    try {
+      const response = await profileAPI.shareAchievement(badgeId);
+      if (response.success && response.data) {
+        const shareText = `${response.data.title}\n\n${response.data.subtitle}\n\nShared from EcoTracker`;
+        await Share.share({
+          message: shareText,
+          title: response.data.title,
+        });
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to prepare share content');
+    }
   };
 
   const getCategoryIcon = (category: string) => {
@@ -115,27 +216,96 @@ export default function GoalsScreen() {
     switch (activeTab) {
       case 'badges':
         return (
-          <View style={styles.comingSoonContainer}>
-            <Text style={styles.comingSoonText}>🏆</Text>
-            <Text style={styles.comingSoonTitle}>Badges</Text>
-            <Text style={styles.comingSoonSubtitle}>Coming Soon!</Text>
-          </View>
+          <ScrollView style={styles.goalsScrollView} showsVerticalScrollIndicator={false}>
+            <Text style={styles.sectionTitle}>Your Badges</Text>
+            {badges && badges.length > 0 ? (
+              <View style={styles.badgeGrid}>
+                {badges.map((badge: any) => (
+                  <View key={badge.id || badge._id || badge.name} style={styles.badgeCard}>
+                    <Text style={styles.badgeIcon}>{badge.icon || '🏆'}</Text>
+                    <Text style={styles.badgeName}>{badge.name || badge.title}</Text>
+                    <Text style={styles.badgeDescription}>{badge.description}</Text>
+                    {badge.earnedAt && (
+                      <Text style={styles.badgeDate}>
+                        Earned: {new Date(badge.earnedAt).toLocaleDateString()}
+                      </Text>
+                    )}
+                    <TouchableOpacity 
+                      style={styles.shareButton}
+                      onPress={() => handleShareBadge(badge.id || badge._id || badge.name)}
+                    >
+                      <IconSymbol name="square.and.arrow.up" size={16} color="white" />
+                      <Text style={styles.shareButtonText}>Share</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.comingSoonContainer}>
+                <Text style={styles.comingSoonText}>🏆</Text>
+                <Text style={styles.comingSoonTitle}>No badges yet</Text>
+                <Text style={styles.comingSoonSubtitle}>Earn badges by logging activities</Text>
+              </View>
+            )}
+            
+            {/* Leaderboard section */}
+            <Text style={[styles.sectionTitle, {marginTop: 30}]}>Leaderboard</Text>
+            {leaderboard && leaderboard.length > 0 ? (
+              leaderboard.map((user, index) => (
+                <View key={index} style={styles.leaderboardItem}>
+                  <Text style={styles.leaderboardRank}>#{index + 1}</Text>
+                  <Text style={styles.leaderboardName}>{user.name}</Text>
+                  <Text style={styles.leaderboardStats}>
+                    {user.activitiesLogged} activities • {user.badges} badges
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>No leaderboard data available</Text>
+            )}
+          </ScrollView>
         );
       case 'social':
         return (
-          <View style={styles.comingSoonContainer}>
-            <Text style={styles.comingSoonText}>👥</Text>
-            <Text style={styles.comingSoonTitle}>Social</Text>
-            <Text style={styles.comingSoonSubtitle}>Connect with eco-warriors</Text>
-          </View>
+          <ScrollView style={styles.goalsScrollView} showsVerticalScrollIndicator={false}>
+            <Text style={styles.sectionTitle}>Community</Text>
+            {posts && posts.length > 0 ? (
+              posts.map(p => (
+                <View key={p._id} style={styles.goalCard}>
+                  <Text style={{fontWeight: '700'}}>{p.author || 'Someone'}</Text>
+                  <Text style={{marginTop: 6}}>{p.content}</Text>
+                  {p.impactData && (
+                    <Text style={{marginTop: 8, color: '#4CAF50'}}>Impact: {p.impactData.co2Saved || 0} kg CO₂</Text>
+                  )}
+                </View>
+              ))
+            ) : (
+              <View style={styles.comingSoonContainer}>
+                <Text style={styles.comingSoonText}>👥</Text>
+                <Text style={styles.comingSoonTitle}>No posts yet</Text>
+                <Text style={styles.comingSoonSubtitle}>Share achievements to connect</Text>
+              </View>
+            )}
+          </ScrollView>
         );
       case 'reports':
         return (
-          <View style={styles.comingSoonContainer}>
-            <Text style={styles.comingSoonText}>📈</Text>
-            <Text style={styles.comingSoonTitle}>Reports</Text>
-            <Text style={styles.comingSoonSubtitle}>Detailed analytics coming soon</Text>
-          </View>
+          <ScrollView style={styles.goalsScrollView} showsVerticalScrollIndicator={false}>
+            <Text style={styles.sectionTitle}>Reports</Text>
+            {reports ? (
+              <View style={styles.goalCard}>
+                <Text style={{fontWeight: '700'}}>Weekly Summary</Text>
+                <Text style={{marginTop: 8}}>Period: {new Date(reports.period.start).toLocaleDateString()} - {new Date(reports.period.end).toLocaleDateString()}</Text>
+                <Text style={{marginTop: 8}}>Daily stats count: {reports.dailyStats ? reports.dailyStats.length : 0}</Text>
+              </View>
+            ) : (
+              <View style={styles.comingSoonContainer}>
+                <Text style={styles.comingSoonText}>📈</Text>
+                <Text style={styles.comingSoonTitle}>No reports yet</Text>
+                <Text style={styles.comingSoonSubtitle}>Start logging activities to see reports</Text>
+              </View>
+            )}
+          </ScrollView>
         );
       default:
         return (
@@ -147,9 +317,12 @@ export default function GoalsScreen() {
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.addGoalContainer}>
-              <TouchableOpacity style={styles.addGoalButton}>
-                <IconSymbol name="plus" size={20} color="white" />
-                <Text style={styles.addGoalText}>Add Goal</Text>
+              <TouchableOpacity 
+                style={styles.addGoalButton}
+                onPress={() => setShowGoalModal(true)}
+              >
+                <IconSymbol name="target" size={16} color="white" />
+                <Text style={styles.addGoalText}>Set Weekly Goal</Text>
               </TouchableOpacity>
             </View>
 
@@ -210,24 +383,7 @@ export default function GoalsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <LinearGradient
-        colors={['#4CAF50', '#2E7D32']}
-        style={styles.headerGradient}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.headerTitle}>Goals &</Text>
-            <Text style={styles.headerTitle}>Achievements</Text>
-            <Text style={styles.headerSubtitle}>
-              Track your progress towards a greener lifestyle
-            </Text>
-          </View>
-          <TouchableOpacity style={styles.headerIcon}>
-            <IconSymbol name="target" size={24} color="white" />
-          </TouchableOpacity>
-        </View>
-      </LinearGradient>
+      <Header title="Goals & Achievements" subtitle="Track your progress towards a greener lifestyle" rightIcon="target" />
 
       {/* Tab Navigation */}
       <View style={styles.tabContainer}>
@@ -251,15 +407,22 @@ export default function GoalsScreen() {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'social' && styles.activeTab]}
-          onPress={() => setActiveTab('social')}
-        >
-          <IconSymbol name="person.2" size={20} color={activeTab === 'social' ? 'white' : '#666'} />
-          <Text style={[styles.tabText, activeTab === 'social' && styles.activeTabText]}>
-            Social
-          </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'social' && styles.activeTab]}
+            onPress={() => {
+              // prefer navigating to full Motivation screen
+              try {
+                router.push('/motivation');
+              } catch (e) {
+                setActiveTab('social');
+              }
+            }}
+          >
+            <IconSymbol name="person.2" size={20} color={activeTab === 'social' ? 'white' : '#666'} />
+            <Text style={[styles.tabText, activeTab === 'social' && styles.activeTabText]}>
+              Social
+            </Text>
+          </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.tab, activeTab === 'reports' && styles.activeTab]}
@@ -276,6 +439,51 @@ export default function GoalsScreen() {
       <View style={styles.contentContainer}>
         {renderTabContent()}
       </View>
+
+      {/* Weekly Goal Setting Modal */}
+      <Modal
+        visible={showGoalModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowGoalModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Set Weekly CO₂ Goal</Text>
+            <Text style={styles.modalSubtitle}>
+              Set your target weekly carbon emissions (kg CO₂)
+            </Text>
+            
+            <TextInput
+              style={styles.modalInput}
+              value={newGoalInput}
+              onChangeText={setNewGoalInput}
+              placeholder={`Current: ${weeklyGoal} kg`}
+              keyboardType="numeric"
+              autoFocus
+            />
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setShowGoalModal(false);
+                  setNewGoalInput('');
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={handleSetWeeklyGoal}
+              >
+                <Text style={styles.confirmButtonText}>Set Goal</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -474,5 +682,151 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
+  },
+  badgeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 20,
+  },
+  badgeCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    width: (Dimensions.get('window').width - 60) / 2,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    alignItems: 'center',
+  },
+  badgeIcon: {
+    fontSize: 32,
+    marginBottom: 8,
+  },
+  badgeName: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  badgeDescription: {
+    fontSize: 11,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  badgeDate: {
+    fontSize: 10,
+    color: '#999',
+    marginBottom: 8,
+  },
+  shareButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  shareButtonText: {
+    color: 'white',
+    fontSize: 11,
+    fontWeight: '500',
+    marginLeft: 4,
+  },
+  leaderboardItem: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  leaderboardRank: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    width: 40,
+  },
+  leaderboardName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    flex: 1,
+    marginLeft: 12,
+  },
+  leaderboardStats: {
+    fontSize: 12,
+    color: '#666',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 24,
+    width: '80%',
+    maxWidth: 300,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#F5F5F5',
+  },
+  confirmButton: {
+    backgroundColor: '#4CAF50',
+  },
+  cancelButtonText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  confirmButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });

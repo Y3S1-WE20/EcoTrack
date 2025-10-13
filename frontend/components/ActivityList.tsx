@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,11 +13,18 @@ import { HabitLog, habitAPI } from '../services/habitAPI';
 interface ActivityListProps {
   activities: HabitLog[];
   onRefresh: () => void;
+  // optional controlled tab: 'today' or 'history'
+  activeTab?: 'today' | 'history';
 }
 
-const ActivityList: React.FC<ActivityListProps> = ({ activities, onRefresh }) => {
-  const [activeTab, setActiveTab] = useState<'today' | 'history'>('today');
+const ActivityList: React.FC<ActivityListProps> = ({ activities, onRefresh, activeTab: controlledTab }) => {
+  const [activeTab, setActiveTab] = useState<'today' | 'history'>(controlledTab || 'today');
   const { theme } = useAppTheme();
+
+  // keep in sync when parent controls the tab
+  useEffect(() => {
+    if (controlledTab) setActiveTab(controlledTab);
+  }, [controlledTab]);
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -86,43 +93,45 @@ const ActivityList: React.FC<ActivityListProps> = ({ activities, onRefresh }) =>
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Tab Header */}
-      <View style={[styles.tabContainer, { backgroundColor: theme.surface }]}>
-        <TouchableOpacity
-          style={[
-            styles.tab, 
-            { backgroundColor: activeTab === 'today' ? theme.primary : 'transparent' }
-          ]}
-          onPress={() => setActiveTab('today')}
-        >
-          <Text style={styles.tabIcon}>📅</Text>
-          <Text
+      {/* Tab Header (only when not controlled by parent) */}
+      {!controlledTab && (
+        <View style={[styles.tabContainer, { backgroundColor: theme.surface }]}>
+          <TouchableOpacity
             style={[
-              styles.tabText, 
-              { color: activeTab === 'today' ? '#fff' : theme.textSecondary }
+              styles.tab, 
+              { backgroundColor: activeTab === 'today' ? theme.primary : 'transparent' }
             ]}
+            onPress={() => setActiveTab('today')}
           >
-            Today's Activities
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.tab, 
-            { backgroundColor: activeTab === 'history' ? theme.primary : 'transparent' }
-          ]}
-          onPress={() => setActiveTab('history')}
-        >
-          <Text style={styles.tabIcon}>📈</Text>
-          <Text
+            <Text style={styles.tabIcon}>📅</Text>
+            <Text
+              style={[
+                styles.tabText, 
+                { color: activeTab === 'today' ? '#fff' : theme.textSecondary }
+              ]}
+            >
+              Today's Activities
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[
-              styles.tabText, 
-              { color: activeTab === 'history' ? '#fff' : theme.textSecondary }
+              styles.tab, 
+              { backgroundColor: activeTab === 'history' ? theme.primary : 'transparent' }
             ]}
+            onPress={() => setActiveTab('history')}
           >
-            History
-          </Text>
-        </TouchableOpacity>
-      </View>
+            <Text style={styles.tabIcon}>📈</Text>
+            <Text
+              style={[
+                styles.tabText, 
+                { color: activeTab === 'history' ? '#fff' : theme.textSecondary }
+              ]}
+            >
+              History
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Content */}
       <View style={styles.content}>
