@@ -3,6 +3,8 @@ import Constants from 'expo-constants';
 
 // Define fallback URLs for different environments
 const STATIC_API_URLS = [
+  // Public localtunnel (loca.lt) URL - preferred for mobile testing across networks
+  'https://cold-streets-train.loca.lt/api/v1',
   'http://localhost:4000/api/v1',     // For adb reverse tunnel and web (PRIORITY)
   'http://10.0.2.2:4000/api/v1',     // Android emulator
   'http://192.168.56.1:4000/api/v1', // VirtualBox/VMware  

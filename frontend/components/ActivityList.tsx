@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,11 @@ interface ActivityListProps {
 const ActivityList: React.FC<ActivityListProps> = ({ activities, onRefresh, userId }) => {
   const [activeTab, setActiveTab] = useState<'today' | 'history'>('today');
   const { theme } = useAppTheme();
+
+  // keep in sync when parent controls the tab
+  useEffect(() => {
+    if (controlledTab) setActiveTab(controlledTab);
+  }, [controlledTab]);
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -178,9 +183,10 @@ const ActivityList: React.FC<ActivityListProps> = ({ activities, onRefresh, user
           />
           <Text
             style={[
-              styles.tabText, 
-              { color: activeTab === 'today' ? '#fff' : theme.textSecondary }
+              styles.tab, 
+              { backgroundColor: activeTab === 'today' ? theme.primary : 'transparent' }
             ]}
+            onPress={() => setActiveTab('today')}
           >
             Today's Activities
           </Text>
@@ -199,14 +205,23 @@ const ActivityList: React.FC<ActivityListProps> = ({ activities, onRefresh, user
           />
           <Text
             style={[
-              styles.tabText, 
-              { color: activeTab === 'history' ? '#fff' : theme.textSecondary }
+              styles.tab, 
+              { backgroundColor: activeTab === 'history' ? theme.primary : 'transparent' }
             ]}
+            onPress={() => setActiveTab('history')}
           >
-            History
-          </Text>
-        </TouchableOpacity>
-      </View>
+            <Text style={styles.tabIcon}>📈</Text>
+            <Text
+              style={[
+                styles.tabText, 
+                { color: activeTab === 'history' ? '#fff' : theme.textSecondary }
+              ]}
+            >
+              History
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Content */}
       <View style={styles.content}>

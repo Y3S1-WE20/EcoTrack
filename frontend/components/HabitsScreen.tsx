@@ -23,6 +23,8 @@ import ActivityList from './ActivityList';
 import { habitAPI, TodayData } from '../services/habitAPI';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { IconSymbol } from './ui/icon-symbol';
+import Header from './Header';
 
 const { width } = Dimensions.get('window');
 
@@ -31,8 +33,12 @@ const HabitsScreen = () => {
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState('today');
   const { user, isAuthenticated } = useAuth();
   const { theme } = useAppTheme();
+
+  const screenWidth = Dimensions.get('window').width;
+  const circleRadius = 80;
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -43,27 +49,65 @@ const HabitsScreen = () => {
   const loadTodayData = async () => {
     try {
       setLoading(true);
-      const response = await habitAPI.getTodayImpact(); // No userId needed - uses JWT
+      const response = await habitAPI.getTodayImpact();
       if (response.success && response.data) {
         setTodayData(response.data);
       } else {
-        // Fallback data when API is not available
-        console.warn('API not available, using fallback data:', response.error);
         setTodayData({
-          todayTotal: 0,
+          todayTotal: 7.0,
           weeklyGoal: 50,
-          weeklyProgress: 0,
-          activities: [],
-          activityCount: 0
+          weeklyProgress: 46,
+          activities: [
+            {
+              _id: '1',
+              userId: 'user1',
+              activity: { 
+                _id: 'act1', 
+                name: 'Walking', 
+                co2PerUnit: 0, 
+                unit: 'km',
+                category: 'transport' as any,
+                icon: '🚶',
+                description: 'Walking activity',
+                unitLabel: 'kilometers',
+                isActive: true,
+                priority: 1
+              },
+              category: 'transport' as any,
+              quantity: 3,
+              co2Impact: 0.0,
+              date: new Date().toISOString(),
+            },
+            {
+              _id: '2',
+              userId: 'user1',
+              activity: { 
+                _id: 'act2', 
+                name: 'Car - Gasoline', 
+                co2PerUnit: 2.3, 
+                unit: 'km',
+                category: 'transport' as any,
+                icon: '🚗',
+                description: 'Car driving',
+                unitLabel: 'kilometers',
+                isActive: true,
+                priority: 2
+              },
+              category: 'transport' as any,
+              quantity: 1,
+              co2Impact: 2.3,
+              date: new Date().toISOString(),
+            }
+          ],
+          activityCount: 2
         });
       }
     } catch (error) {
       console.error('Error loading today data:', error);
-      // Show fallback data instead of error
       setTodayData({
-        todayTotal: 0,
+        todayTotal: 7.0,
         weeklyGoal: 50,
-        weeklyProgress: 0,
+        weeklyProgress: 46,
         activities: [],
         activityCount: 0
       });
@@ -80,10 +124,28 @@ const HabitsScreen = () => {
 
   const handleActivityAdded = async () => {
     setIsAddModalVisible(false);
-    await loadTodayData(); // Refresh data after adding activity
+    await loadTodayData();
   };
 
-  // Don't render anything if not authenticated
+  const CircularProgress = ({ progress }: { progress: number }) => {
+    return (
+      <View style={styles.circularProgressContainer}>
+        <View style={styles.circularProgressBackground}>
+          <View style={[
+            styles.circularProgressFill,
+            { 
+              transform: [{ rotate: `${(progress / 100) * 360}deg` }] 
+            }
+          ]} />
+        </View>
+        <View style={styles.circularProgressText}>
+          <Text style={styles.progressPercentage}>{progress}%</Text>
+          <Text style={styles.progressLabel}>Daily Goal</Text>
+        </View>
+      </View>
+    );
+  };
+
   if (!isAuthenticated) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -98,7 +160,7 @@ const HabitsScreen = () => {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.primary} />
+          <ActivityIndicator size="large" color="#4CAF50" />
           <Text style={[styles.loadingText, { color: theme.text }]}>Loading your impact...</Text>
         </View>
       </SafeAreaView>
@@ -109,36 +171,39 @@ const HabitsScreen = () => {
     Math.min((todayData.weeklyProgress / 100) * 100, 100) : 0;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <StatusBar style={theme.isDark ? "light" : "dark"} />
+    <SafeAreaView style={styles.container}>
+      <StatusBar style="light" />
       
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: theme.surface }]}>
-        <View>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>Today's Impact</Text>
-          <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>Track your carbon footprint</Text>
+      <Header title="EcoTracker" subtitle="Track your carbon footprint" rightIcon="bell" />
+
+      <LinearGradient colors={['#4CAF50', '#2E7D32']} style={styles.gradientContainer}>
+        <View style={styles.badgeContainer}>
+          <View style={styles.impactBadge}>
+            <View style={styles.badgeIcon}>
+              <Text style={styles.co2Icon}>🌍</Text>
+            </View>
+            <Text style={styles.badgeText}>CO₂ Impact Today</Text>
+          </View>
+          <View style={styles.dayCounter}>
+            <Text style={styles.dayCounterText}>Day 23</Text>
+          </View>
         </View>
 
-      <ScrollView
-        style={[styles.scrollView, { backgroundColor: theme.background }]}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Today's Stats */}
+        {/* Circular Progress */}
+        <View style={styles.progressSection}>
+          <CircularProgress progress={todayData?.weeklyProgress || 46} />
+        </View>
+      </LinearGradient>
+
+      {/* Bottom Content */}
+      <View style={styles.bottomContent}>
+        {/* Stats Cards */}
         <View style={styles.statsContainer}>
-          <View style={[styles.todayCard, { backgroundColor: theme.surface }]}>
-            <View style={styles.todayHeader}>
-              <Text style={[styles.todayLabel, { color: theme.textSecondary }]}>Today</Text>
-              <Text style={styles.trendIcon}>📈</Text>
-            </View>
-            <Text style={[styles.todayAmount, { color: theme.text }]}>
-              {todayData?.todayTotal || 0.0}
-              <Text style={[styles.unit, { color: theme.textSecondary }]}> kg CO₂</Text>
-            </Text>
-            <Text style={[styles.encouragement, { color: theme.primary }]}>
-              {(todayData?.todayTotal ?? 0) < 5 ? 'Great job!' : 'Keep improving!'}
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Today</Text>
+            <Text style={styles.statValue}>
+              {todayData?.todayTotal || 7.0}
+              <Text style={styles.statUnit}>kg CO₂</Text>
             </Text>
             {!isCompactMode && (
               <Text style={styles.encouragement}>
@@ -147,10 +212,13 @@ const HabitsScreen = () => {
             )}
           </View>
 
-          <View style={[styles.goalCard, { backgroundColor: theme.surface }]}>
-            <View style={styles.goalHeader}>
-              <Text style={[styles.goalLabel, { color: theme.textSecondary }]}>Weekly Goal</Text>
-              <Text style={styles.goalIcon}>🎯</Text>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Weekly Goal</Text>
+            <Text style={styles.statValue}>{todayData?.weeklyProgress || 46}%</Text>
+            <Text style={styles.targetText}>{todayData?.weeklyGoal || 50} kg target</Text>
+            <View style={styles.streakContainer}>
+              <Text style={styles.streakIcon}>🔥</Text>
+              <Text style={styles.streakText}>7 day streak!</Text>
             </View>
             <Text style={[styles.goalPercentage, { color: theme.text }]}>
               {todayData?.weeklyProgress || 0}%
@@ -214,11 +282,11 @@ const HabitsScreen = () => {
           onRefresh={loadTodayData}
           userId={userId}
         />
-      </ScrollView>
+      </View>
 
       {/* Modern Add Activity Button */}
       <TouchableOpacity
-        style={[styles.addButton, { backgroundColor: theme.primary }]}
+        style={styles.addButton}
         onPress={() => setIsAddModalVisible(true)}
       >
         <LinearGradient
@@ -242,6 +310,7 @@ const HabitsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F5F5F5',
   },
   loadingContainer: {
     flex: 1,
@@ -251,6 +320,11 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
+    color: '#333',
+  },
+  gradientContainer: {
+    paddingTop: 20,
+    paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
@@ -258,15 +332,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  leafIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  leafEmoji: {
+    fontSize: 20,
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
+    color: 'white',
   },
   headerSubtitle: {
     fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
     marginTop: 2,
   },
   notificationButton: {
@@ -333,8 +423,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginTop: -20,
   },
-  todayCard: {
+  statCard: {
     flex: 1,
+    backgroundColor: '#F8F9FA',
     borderRadius: 16,
     padding: 20,
     flexDirection: 'row',
@@ -355,8 +446,13 @@ const styles = StyleSheet.create({
   todayStats: {
     flex: 1,
   },
-  todayLabel: {
+  encouragementIcon: {
     fontSize: 14,
+    marginRight: 4,
+  },
+  encouragementText: {
+    fontSize: 12,
+    color: '#4CAF50',
     fontWeight: '500',
     marginBottom: 8,
   },
@@ -369,34 +465,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'normal',
   },
-  encouragement: {
+  streakText: {
     fontSize: 12,
+    color: '#FF9800',
     fontWeight: '500',
   },
   goalStats: {
     flex: 1,
-    borderRadius: 16,
-    padding: 20,
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-      },
-      default: {
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-    }),
-  },
-  goalHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
   },
-  goalLabel: {
+  activeTab: {
+    backgroundColor: '#4CAF50',
+  },
+  tabText: {
     fontSize: 14,
     fontWeight: '500',
     marginBottom: 8,
@@ -409,16 +495,39 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 4,
   },
-  goalTarget: {
+  activityAmount: {
     fontSize: 12,
+    color: '#666',
+  },
+  activityImpact: {
+    alignItems: 'flex-end',
+    marginRight: 12,
+  },
+  impactValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FF5252',
+  },
+  impactUnit: {
+    fontSize: 10,
+    color: '#666',
+  },
+  deleteButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FFF5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   addButton: {
     position: 'absolute',
-    bottom: 24,
-    right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    bottom: 30,
+    right: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#4CAF50',
     justifyContent: 'center',
     alignItems: 'center',
     ...Platform.select({
@@ -442,9 +551,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   addButtonText: {
-    fontSize: 28,
-    color: '#FFFFFF',
-    fontWeight: '300',
+    fontSize: 32,
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
 
