@@ -296,6 +296,82 @@ const getWeeklyStats = async (req, res) => {
   }
 };
 
+// Get monthly statistics
+const getMonthlyStats = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const today = new Date();
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    monthStart.setHours(0, 0, 0, 0);
+    
+    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    monthEnd.setHours(23, 59, 59, 999);
+
+    // Get monthly progress data
+    const monthlyData = await HabitLog.getWeeklyProgress(userId, monthStart, monthEnd);
+
+    // Get daily totals for the month
+    const dailyStats = await HabitLog.aggregate([
+      {
+        $match: {
+          userId,
+          date: { $gte: monthStart, $lte: monthEnd }
+        }
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$date' } },
+          totalCO2: { $sum: '$co2Impact' },
+          activityCount: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id': 1 } }
+    ]);
+
+    // Get weekly breakdown for the month
+    const weeklyBreakdown = await HabitLog.aggregate([
+      {
+        $match: {
+          userId,
+          date: { $gte: monthStart, $lte: monthEnd }
+        }
+      },
+      {
+        $group: {
+          _id: { 
+            week: { $week: '$date' },
+            year: { $year: '$date' }
+          },
+          totalCO2: { $sum: '$co2Impact' },
+          activityCount: { $sum: 1 },
+          weekStart: { $min: '$date' },
+          weekEnd: { $max: '$date' }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.week': 1 } }
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        monthlyData,
+        dailyStats,
+        weeklyBreakdown,
+        period: {
+          start: monthStart,
+          end: monthEnd
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get monthly stats error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get monthly statistics'
+    });
+  }
+};
+
 // Update habit log
 const updateHabitLog = async (req, res) => {
   try {
@@ -391,6 +467,118 @@ const deleteHabitLog = async (req, res) => {
   }
 };
 
+// Get filtered habit logs by date and category
+const getFilteredHabitLogs = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { date, categoryId } = req.query;
+
+    // Validate required parameters
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'User ID is required'
+      });
+    }
+
+    // Build the filter query
+    let filter = { userId };
+
+    // Add date filter if provided
+    if (date) {
+      const targetDate = new Date(date);
+      targetDate.setHours(0, 0, 0, 0);
+      const nextDay = new Date(targetDate);
+      nextDay.setDate(targetDate.getDate() + 1);
+      
+      filter.date = { $gte: targetDate, $lt: nextDay };
+    }
+
+    // Add category filter if provided
+    if (categoryId && categoryId !== 'all') {
+      filter.category = categoryId;
+    }
+
+    // Get filtered habit logs
+    const habitLogs = await HabitLog.find(filter)
+      .populate('activity category')
+      .sort({ date: -1 });
+
+    // Calculate statistics
+    const totalCO2 = habitLogs.reduce((sum, log) => sum + log.co2Impact, 0);
+    const activityCount = habitLogs.length;
+
+    // Group by category for pie chart data
+    const categoryBreakdown = {};
+    habitLogs.forEach(log => {
+      const categoryName = log.category.name;
+      if (!categoryBreakdown[categoryName]) {
+        categoryBreakdown[categoryName] = {
+          name: categoryName,
+          value: 0,
+          color: log.category.color,
+          icon: log.category.icon
+        };
+      }
+      categoryBreakdown[categoryName].value += log.co2Impact;
+    });
+
+    const pieChartData = Object.values(categoryBreakdown);
+
+    // Group by date for bar chart (if no specific date filter)
+    let barChartData = [];
+    if (!date) {
+      const dateGroups = {};
+      habitLogs.forEach(log => {
+        const dateKey = new Date(log.date).toISOString().split('T')[0];
+        if (!dateGroups[dateKey]) {
+          dateGroups[dateKey] = 0;
+        }
+        dateGroups[dateKey] += log.co2Impact;
+      });
+
+      barChartData = Object.entries(dateGroups).map(([date, co2]) => ({
+        date,
+        co2: parseFloat(co2.toFixed(2))
+      })).sort((a, b) => new Date(a.date) - new Date(b.date));
+    } else {
+      // For single date, show hourly breakdown
+      const hourGroups = {};
+      habitLogs.forEach(log => {
+        const hour = new Date(log.date).getHours();
+        if (!hourGroups[hour]) {
+          hourGroups[hour] = 0;
+        }
+        hourGroups[hour] += log.co2Impact;
+      });
+
+      barChartData = Array.from({ length: 24 }, (_, hour) => ({
+        hour: `${hour}:00`,
+        co2: hourGroups[hour] || 0
+      }));
+    }
+
+    res.json({
+      success: true,
+      data: {
+        habitLogs,
+        totalCO2: parseFloat(totalCO2.toFixed(2)),
+        activityCount,
+        pieChartData,
+        barChartData,
+        selectedDate: date || null,
+        selectedCategory: categoryId || 'all'
+      }
+    });
+  } catch (error) {
+    console.error('Get filtered habit logs error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get filtered habit logs'
+    });
+  }
+};
+
 module.exports = {
   getTodayImpact,
   addHabitLog,
@@ -398,6 +586,8 @@ module.exports = {
   getCategories,
   getActivityHistory,
   getWeeklyStats,
+  getMonthlyStats,
   updateHabitLog,
-  deleteHabitLog
+  deleteHabitLog,
+  getFilteredHabitLogs
 };

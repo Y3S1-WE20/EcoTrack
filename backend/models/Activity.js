@@ -21,13 +21,13 @@ const activitySchema = new mongoose.Schema({
   },
   co2PerUnit: {
     type: Number,
-    required: true,
-    min: 0
+    required: true
+    // Removed min: 0 to allow negative values for carbon-reducing activities like recycling
   },
   unit: {
     type: String,
     required: true,
-    enum: ['km', 'kg', 'kWh', 'liter', 'piece', 'hour']
+    enum: ['km', 'kg', 'kWh', 'liter', 'piece', 'hour', 'custom']
   },
   unitLabel: {
     type: String,

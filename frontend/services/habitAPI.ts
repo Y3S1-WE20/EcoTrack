@@ -49,6 +49,47 @@ export interface TodayData {
   activityCount: number;
 }
 
+export interface UserChallenge {
+  _id: string;
+  userId: string;
+  challengeId: string;
+  challengeName: string;
+  challengeDescription: string;
+  category: string;
+  type: 'weekly' | 'monthly' | 'streak';
+  target: number;
+  targetMetric: 'activities' | 'categorySpecific' | 'co2Reduction' | 'consistency';
+  currentProgress: number;
+  status: 'active' | 'completed' | 'failed' | 'abandoned';
+  joinedAt: string;
+  completedAt?: string;
+  endDate: string;
+  reward: string;
+  icon: string;
+  color: string;
+  shared: boolean;
+  sharedAt?: string;
+  sharedPlatforms: Array<{
+    platform: 'instagram' | 'whatsapp' | 'facebook';
+    sharedAt: string;
+  }>;
+  globalRank?: number;
+  co2Saved: number;
+}
+
+export interface ChallengeShareData {
+  challengeName: string;
+  reward: string;
+  icon: string;
+  color: string;
+  completedAt: string;
+  globalRank?: number;
+  totalParticipants: number;
+  co2Saved: number;
+  progress: number;
+  target: number;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
@@ -214,6 +255,11 @@ class HabitAPI {
     return this.request<any>('/habits/stats/weekly');
   }
 
+  // Get monthly statistics
+  async getMonthlyStats(userId: string): Promise<ApiResponse<any>> {
+    return this.request<any>(`/habits/stats/monthly/${userId}`);
+  }
+
   // Update habit log
   async updateHabitLog(
     logId: string,
@@ -230,6 +276,89 @@ class HabitAPI {
     return this.request<any>(`/habits/log/${logId}`, {
       method: 'DELETE',
     });
+  }
+
+  // Get filtered habit logs with statistics
+  async getFilteredHabitLogs(
+    userId: string, 
+    filters?: { date?: string; categoryId?: string }
+  ): Promise<ApiResponse<{
+    habitLogs: HabitLog[];
+    totalCO2: number;
+    activityCount: number;
+    pieChartData: Array<{
+      name: string;
+      value: number;
+      color: string;
+      icon: string;
+    }>;
+    barChartData: Array<{
+      date?: string;
+      hour?: string;
+      co2: number;
+    }>;
+    selectedDate: string | null;
+    selectedCategory: string;
+  }>> {
+    const searchParams = new URLSearchParams();
+    
+    if (filters?.date) {
+      searchParams.append('date', filters.date);
+    }
+    if (filters?.categoryId) {
+      searchParams.append('categoryId', filters.categoryId);
+    }
+
+    const queryString = searchParams.toString();
+    return this.request(`/habits/filtered/${userId}${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Challenge API methods
+  async getUserChallenges(userId: string): Promise<ApiResponse<{
+    active: UserChallenge[];
+    completed: UserChallenge[];
+  }>> {
+    return this.request(`/challenges/user/${userId}`);
+  }
+
+  async joinChallenge(userId: string, challengeData: {
+    challengeId: string;
+    challengeName: string;
+    challengeDescription: string;
+    category: string;
+    type: 'weekly' | 'monthly' | 'streak';
+    target: number;
+    targetMetric: 'activities' | 'categorySpecific' | 'co2Reduction' | 'consistency';
+    endDate: string;
+    reward: string;
+    icon: string;
+    color: string;
+  }): Promise<ApiResponse<UserChallenge>> {
+    return this.request(`/challenges/user/${userId}/join`, {
+      method: 'POST',
+      body: JSON.stringify(challengeData),
+    });
+  }
+
+  async updateChallengeProgress(userId: string, challengeId: string): Promise<ApiResponse<UserChallenge>> {
+    return this.request(`/challenges/user/${userId}/${challengeId}/progress`, {
+      method: 'PUT',
+    });
+  }
+
+  async getChallengeLeaderboard(challengeId: string, limit = 50): Promise<ApiResponse<UserChallenge[]>> {
+    return this.request(`/challenges/${challengeId}/leaderboard?limit=${limit}`);
+  }
+
+  async markChallengeShared(userId: string, challengeId: string, platform: 'instagram' | 'whatsapp' | 'facebook'): Promise<ApiResponse<UserChallenge>> {
+    return this.request(`/challenges/user/${userId}/${challengeId}/share`, {
+      method: 'POST',
+      body: JSON.stringify({ platform }),
+    });
+  }
+
+  async getChallengeShareData(userId: string, challengeId: string): Promise<ApiResponse<ChallengeShareData>> {
+    return this.request(`/challenges/user/${userId}/${challengeId}/share-data`);
   }
 }
 
